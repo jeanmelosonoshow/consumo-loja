@@ -35,6 +35,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     filial_contador VARCHAR(30);
+    proxima_leitura NUMERIC(18, 3);
 BEGIN
     SELECT idfilial_usr
       INTO filial_contador
@@ -54,6 +55,32 @@ BEGIN
        AND data_leitura < NEW.data_leitura
      ORDER BY data_leitura DESC
      LIMIT 1;
+
+    IF NEW.leitura_anterior IS NOT NULL
+       AND NEW.leitura < NEW.leitura_anterior THEN
+        RAISE EXCEPTION
+            'A leitura informada (%) não pode ser menor que a leitura anterior (%).',
+            NEW.leitura,
+            NEW.leitura_anterior
+            USING ERRCODE = '23514';
+    END IF;
+
+    SELECT leitura
+      INTO proxima_leitura
+      FROM leitura_contador
+     WHERE id_contador = NEW.id_contador
+       AND data_leitura > NEW.data_leitura
+     ORDER BY data_leitura ASC
+     LIMIT 1;
+
+    IF proxima_leitura IS NOT NULL
+       AND NEW.leitura > proxima_leitura THEN
+        RAISE EXCEPTION
+            'A leitura retroativa informada (%) não pode ser maior que a próxima leitura registrada (%).',
+            NEW.leitura,
+            proxima_leitura
+            USING ERRCODE = '23514';
+    END IF;
 
     RETURN NEW;
 END;

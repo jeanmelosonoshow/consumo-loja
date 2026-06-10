@@ -98,6 +98,16 @@ imediatamente anterior pela `DATA_LEITURA`. Se uma leitura retroativa for
 inserida entre dois registros, o campo `LEITURA_ANTERIOR` do registro seguinte
 também é atualizado.
 
+O banco também valida a sequência acumulada do contador:
+
+```text
+Nova leitura >= leitura anterior
+Leitura retroativa <= próxima leitura já registrada
+```
+
+Uma leitura menor somente deve ser permitida em um fluxo específico de troca,
+reinicialização ou virada do contador, que ainda será definido.
+
 A integração Neon da Vercel deve disponibilizar uma destas variáveis:
 
 ```text
