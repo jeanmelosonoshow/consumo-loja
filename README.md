@@ -123,6 +123,7 @@ A aplicação expõe:
 ```text
 GET  /api/contadores?filial={IDFILIAL_USR}
 POST /api/contadores
+POST /api/leituras
 ```
 
 O parâmetro recebido via GET deve ser validado pela API antes de qualquer
@@ -140,10 +141,10 @@ Observação
 Última leitura registrada
 ```
 
-Data e valor são obrigatórios para todos os contadores. Motivo e observação
-serão obrigatórios somente quando o aumento ultrapassar o percentual que ainda
-será definido. Nesta etapa, o envio valida os campos, mas ainda não grava as
-leituras no banco.
+Data e valor são obrigatórios para todos os contadores. O envio é realizado em
+uma única transação: se uma leitura for inválida ou duplicada, nenhuma leitura
+do conjunto é gravada. A restrição única `(ID_CONTADOR, DATA_LEITURA)` impede
+mais de uma leitura para o mesmo contador na mesma data.
 
 ## Altura automática no Adianti
 

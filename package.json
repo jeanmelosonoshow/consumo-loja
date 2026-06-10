@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check api/contadores.js"
+    "check": "node --check app.js && node --check api/contadores.js && node --check api/leituras.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1"

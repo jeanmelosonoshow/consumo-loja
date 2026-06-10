@@ -1,0 +1,140 @@
+import { neon } from "@neondatabase/serverless";
+
+const CODIGO_FILIAL_VALIDO = /^[A-Za-z0-9._-]{1,30}$/;
+const DATA_VALIDA = /^\d{4}-\d{2}-\d{2}$/;
+
+export default async function handler(request, response) {
+  const connectionString =
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_URL_NON_POOLING;
+
+  if (!connectionString) {
+    return response.status(500).json({
+      message: "A conexão com o banco de dados não está configurada.",
+    });
+  }
+
+  if (request.method !== "POST") {
+    response.setHeader("Allow", "POST");
+    return response.status(405).json({ message: "Método não permitido." });
+  }
+
+  const sql = neon(connectionString);
+
+  try {
+    return await createReadings(request, response, sql);
+  } catch (error) {
+    console.error("Erro na API de leituras:", error);
+
+    if (error.code === "23505") {
+      return response.status(409).json({
+        message:
+          "Já existe uma leitura para um dos contadores na data informada. Nenhuma leitura foi gravada.",
+      });
+    }
+
+    if (error.code === "23514") {
+      return response.status(422).json({
+        message: `${cleanDatabaseMessage(error.message)} Nenhuma leitura foi gravada.`,
+      });
+    }
+
+    if (error.code === "42P01") {
+      return response.status(500).json({
+        message: "A tabela leitura_contador ainda não existe no banco.",
+      });
+    }
+
+    return response.status(500).json({
+      message: "Não foi possível gravar as leituras. Nenhuma leitura foi gravada.",
+    });
+  }
+}
+
+async function createReadings(request, response, sql) {
+  const filial = normalizeText(request.body?.IDFILIAL_USR);
+  const readings = request.body?.LEITURAS;
+
+  if (!CODIGO_FILIAL_VALIDO.test(filial)) {
+    return response.status(400).json({ message: "Código da filial inválido." });
+  }
+
+  if (!Array.isArray(readings) || readings.length === 0) {
+    return response.status(400).json({
+      message: "Informe as leituras de todos os contadores ativos.",
+    });
+  }
+
+  const activeMeters = await sql`
+    SELECT id_contador::text AS id_contador
+    FROM cadastro_contador
+    WHERE idfilial_usr = ${filial}
+      AND status = 'T'
+    ORDER BY id_contador
+  `;
+  const activeIds = activeMeters.map((meter) => meter.id_contador);
+  const receivedIds = readings.map((reading) => String(reading.ID_CONTADOR));
+  const uniqueReceivedIds = new Set(receivedIds);
+
+  if (
+    activeIds.length !== readings.length ||
+    uniqueReceivedIds.size !== readings.length ||
+    activeIds.some((id) => !uniqueReceivedIds.has(id))
+  ) {
+    return response.status(400).json({
+      message:
+        "É obrigatório informar exatamente uma leitura para cada contador ativo da filial.",
+    });
+  }
+
+  for (const reading of readings) {
+    const date = normalizeText(reading.DATA_LEITURA);
+    const value = Number(reading.LEITURA);
+
+    if (!DATA_VALIDA.test(date) || !Number.isFinite(value) || value < 0) {
+      return response.status(400).json({
+        message: "Uma ou mais leituras possuem data ou valor inválido.",
+      });
+    }
+  }
+
+  const queries = readings.map((reading) => {
+    const meterId = String(reading.ID_CONTADOR);
+    const date = normalizeText(reading.DATA_LEITURA);
+    const value = Number(reading.LEITURA);
+
+    return sql`
+      INSERT INTO leitura_contador (
+        idfilial_usr,
+        id_contador,
+        data_leitura,
+        leitura
+      )
+      VALUES (${filial}, ${meterId}, ${date}, ${value})
+      RETURNING
+        id_leitura AS "ID_LEITURA",
+        id_contador AS "ID_CONTADOR",
+        data_leitura AS "DATA_LEITURA",
+        leitura AS "LEITURA",
+        leitura_anterior AS "LEITURA_ANTERIOR",
+        data_registro AS "DATA_REGISTRO"
+    `;
+  });
+
+  const results = await sql.transaction(queries);
+  const savedReadings = results.flat();
+
+  return response.status(201).json({
+    message: `${savedReadings.length} leitura(s) gravada(s) com sucesso.`,
+    readings: savedReadings,
+  });
+}
+
+function normalizeText(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanDatabaseMessage(message) {
+  return String(message).split("\n")[0].replace(/^.*?:\s*/, "");
+}

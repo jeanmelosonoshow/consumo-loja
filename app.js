@@ -15,6 +15,7 @@ const formError = document.querySelector("#form-error");
 const toast = document.querySelector("#toast");
 const readingsForm = document.querySelector("#readings-form");
 const readingsActions = document.querySelector("#readings-actions");
+const readingsSuccess = document.querySelector("#readings-success");
 let selectedMeterType = null;
 let meters = [];
 
@@ -40,7 +41,7 @@ function initialize() {
   });
 
   meterForm.addEventListener("submit", saveMeter);
-  readingsForm.addEventListener("submit", validateReadings);
+  readingsForm.addEventListener("submit", saveReadings);
   dialog.addEventListener("close", resetForm);
   initializeHeightReporting();
   loadMeters();
@@ -166,9 +167,15 @@ function renderMeterList(type, container) {
 
       const lastReading = document.createElement("div");
       lastReading.className = "last-reading";
+      const lastReadingText =
+        meter.ULTIMA_LEITURA == null
+          ? "Nenhuma leitura registrada"
+          : `${formatReading(meter.ULTIMA_LEITURA)} em ${formatDate(
+              meter.DATA_ULTIMA_LEITURA,
+            )}`;
       lastReading.innerHTML = `
         <span>Última leitura</span>
-        <strong>Nenhuma leitura registrada</strong>
+        <strong>${lastReadingText}</strong>
       `;
 
       text.append(name, number);
@@ -275,15 +282,59 @@ function showFormError(message) {
   formError.hidden = false;
 }
 
-function showToast(message) {
+function showToast(message, duration = 3000) {
   toast.textContent = message;
   toast.classList.add("is-visible");
-  window.setTimeout(() => toast.classList.remove("is-visible"), 3000);
+  window.setTimeout(() => toast.classList.remove("is-visible"), duration);
 }
 
 function setButtonLoading(button, loading) {
   button.disabled = loading;
   button.textContent = loading ? "Salvando..." : "Salvar relógio";
+}
+
+async function saveReadings(event) {
+  event.preventDefault();
+  readingsSuccess.hidden = true;
+
+  if (!readingsForm.reportValidity()) {
+    showToast("Preencha a data e o valor de todos os relógios.");
+    return;
+  }
+
+  const submitButton = readingsForm.querySelector('[type="submit"]');
+  const readings = meters.map((meter) => ({
+    ID_CONTADOR: meter.ID_CONTADOR,
+    DATA_LEITURA: document.querySelector(`#date-${meter.ID_CONTADOR}`).value,
+    LEITURA: document.querySelector(`#value-${meter.ID_CONTADOR}`).value,
+  }));
+
+  try {
+    setReadingsButtonLoading(submitButton, true);
+    const response = await fetch("/api/leituras", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        IDFILIAL_USR: branchId,
+        LEITURAS: readings,
+      }),
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Não foi possível gravar as leituras.");
+    }
+
+    readingsSuccess.textContent =
+      `${result.message} O formulário foi atualizado com as últimas leituras.`;
+    readingsSuccess.hidden = false;
+    readingsSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
+    await loadMeters();
+  } catch (error) {
+    showToast(error.message, 6000);
+  } finally {
+    setReadingsButtonLoading(submitButton, false);
+  }
 }
 
 function initializeHeightReporting() {
@@ -303,15 +354,20 @@ function initializeHeightReporting() {
   reportHeight();
 }
 
-function validateReadings(event) {
-  event.preventDefault();
+function formatReading(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  }).format(Number(value));
+}
 
-  if (!readingsForm.reportValidity()) {
-    showToast("Preencha a data e o valor de todos os relógios.");
-    return;
-  }
+function formatDate(value) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
 
-  showToast(
-    "Todos os campos obrigatórios foram preenchidos. A gravação das leituras será a próxima etapa.",
-  );
+function setReadingsButtonLoading(button, loading) {
+  button.disabled = loading;
+  button.textContent = loading ? "Enviando leituras..." : "Enviar todas as leituras";
 }

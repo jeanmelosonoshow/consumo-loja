@@ -58,10 +58,19 @@ async function listMeters(request, response, sql) {
       numero_contador AS "NUMERO_CONTADOR",
       tipo_contador AS "TIPO_CONTADOR",
       status AS "STATUS",
-      data_cadastro AS "DATA_CADASTRO"
-    FROM cadastro_contador
-    WHERE idfilial_usr = ${filial}
-      AND status = 'T'
+      data_cadastro AS "DATA_CADASTRO",
+      ultima_leitura.leitura AS "ULTIMA_LEITURA",
+      ultima_leitura.data_leitura AS "DATA_ULTIMA_LEITURA"
+    FROM cadastro_contador AS contador
+    LEFT JOIN LATERAL (
+      SELECT leitura, data_leitura
+      FROM leitura_contador
+      WHERE id_contador = contador.id_contador
+      ORDER BY data_leitura DESC
+      LIMIT 1
+    ) AS ultima_leitura ON TRUE
+    WHERE contador.idfilial_usr = ${filial}
+      AND contador.status = 'T'
     ORDER BY tipo_contador, apelido_contador
   `;
 

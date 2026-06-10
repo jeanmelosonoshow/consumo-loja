@@ -150,6 +150,13 @@ button {
   font-size: 0.8rem;
 }
 
+.notice--success {
+  border-color: #9ed2bd;
+  background: #edf9f4;
+  color: #115542;
+  font-weight: 600;
+}
+
 .resource-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
