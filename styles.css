@@ -150,13 +150,6 @@ button {
   font-size: 0.8rem;
 }
 
-.notice--success {
-  border-color: #9ed2bd;
-  background: #edf9f4;
-  color: #115542;
-  font-weight: 600;
-}
-
 .resource-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -554,27 +547,59 @@ button {
   gap: 9px;
 }
 
-.toast {
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 10;
-  max-width: min(390px, calc(100% - 44px));
-  padding: 13px 16px;
-  border-radius: 9px;
-  background: #17382f;
-  color: white;
-  box-shadow: var(--shadow);
-  font-size: 0.82rem;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(10px);
-  transition: 180ms ease;
+.message-dialog {
+  width: min(460px, calc(100% - 30px));
 }
 
-.toast.is-visible {
-  opacity: 1;
-  transform: translateY(0);
+.message-dialog__content {
+  padding: 30px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.message-dialog__icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--water-soft);
+  color: var(--water);
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.message-dialog[data-type="success"] .message-dialog__icon {
+  background: #e5f6ee;
+  color: var(--primary);
+}
+
+.message-dialog[data-type="error"] .message-dialog__icon {
+  background: #fff0f0;
+  color: #b52d2d;
+}
+
+.message-dialog[data-type="warning"] .message-dialog__icon {
+  background: var(--energy-soft);
+  color: #a76000;
+}
+
+.message-dialog h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.message-dialog__text {
+  margin: 12px 0 24px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.message-dialog .button {
+  min-width: 130px;
 }
 
 @media (max-width: 920px) {

@@ -52,8 +52,6 @@
         <code>?$a_system_user_unit_code=123</code> para testar o formulário.
       </div>
 
-      <div id="readings-success" class="notice notice--success" hidden></div>
-
       <form id="readings-form">
         <div class="resource-grid">
           <section class="resource-card resource-card--energy">
@@ -183,7 +181,23 @@
       </form>
     </dialog>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <dialog id="message-dialog" class="dialog message-dialog">
+      <div class="message-dialog__content">
+        <span id="message-dialog-icon" class="message-dialog__icon" aria-hidden="true"></span>
+        <div>
+          <p id="message-dialog-eyebrow" class="eyebrow">Informação</p>
+          <h2 id="message-dialog-title">Atenção</h2>
+          <p id="message-dialog-text" class="message-dialog__text"></p>
+        </div>
+        <button
+          id="message-dialog-close"
+          class="button button--primary"
+          type="button"
+        >
+          Entendi
+        </button>
+      </div>
+    </dialog>
 
     <script src="app.js"></script>
   </body>

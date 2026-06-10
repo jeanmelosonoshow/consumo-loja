@@ -12,10 +12,13 @@ const dialog = document.querySelector("#meter-dialog");
 const meterForm = document.querySelector("#meter-form");
 const dialogTitle = document.querySelector("#dialog-title");
 const formError = document.querySelector("#form-error");
-const toast = document.querySelector("#toast");
 const readingsForm = document.querySelector("#readings-form");
 const readingsActions = document.querySelector("#readings-actions");
-const readingsSuccess = document.querySelector("#readings-success");
+const messageDialog = document.querySelector("#message-dialog");
+const messageDialogIcon = document.querySelector("#message-dialog-icon");
+const messageDialogEyebrow = document.querySelector("#message-dialog-eyebrow");
+const messageDialogTitle = document.querySelector("#message-dialog-title");
+const messageDialogText = document.querySelector("#message-dialog-text");
 let selectedMeterType = null;
 let meters = [];
 
@@ -39,6 +42,9 @@ function initialize() {
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => dialog.close());
   });
+  document
+    .querySelector("#message-dialog-close")
+    .addEventListener("click", () => messageDialog.close());
 
   meterForm.addEventListener("submit", saveMeter);
   readingsForm.addEventListener("submit", saveReadings);
@@ -86,9 +92,17 @@ async function saveMeter(event) {
     meters.push(result);
     dialog.close();
     renderMeters();
-    showToast(`${nickname} foi cadastrado com sucesso.`);
+    showMessage({
+      type: "success",
+      title: "Relógio cadastrado",
+      message: `${nickname} foi cadastrado com sucesso e já está disponível para receber leituras.`,
+    });
   } catch (error) {
-    showFormError(error.message);
+    showMessage({
+      type: "error",
+      title: "Não foi possível cadastrar",
+      message: error.message,
+    });
   } finally {
     setButtonLoading(submitButton, false);
   }
@@ -282,12 +296,6 @@ function showFormError(message) {
   formError.hidden = false;
 }
 
-function showToast(message, duration = 3000) {
-  toast.textContent = message;
-  toast.classList.add("is-visible");
-  window.setTimeout(() => toast.classList.remove("is-visible"), duration);
-}
-
 function setButtonLoading(button, loading) {
   button.disabled = loading;
   button.textContent = loading ? "Salvando..." : "Salvar relógio";
@@ -295,10 +303,14 @@ function setButtonLoading(button, loading) {
 
 async function saveReadings(event) {
   event.preventDefault();
-  readingsSuccess.hidden = true;
 
   if (!readingsForm.reportValidity()) {
-    showToast("Preencha a data e o valor de todos os relógios.");
+    showMessage({
+      type: "warning",
+      title: "Preenchimento incompleto",
+      message:
+        "Informe a data e o valor da leitura de todos os relógios ativos antes de enviar.",
+    });
     return;
   }
 
@@ -325,13 +337,18 @@ async function saveReadings(event) {
       throw new Error(result.message || "Não foi possível gravar as leituras.");
     }
 
-    readingsSuccess.textContent =
-      `${result.message} O formulário foi atualizado com as últimas leituras.`;
-    readingsSuccess.hidden = false;
-    readingsSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
     await loadMeters();
+    showMessage({
+      type: "success",
+      title: "Leituras enviadas",
+      message: `${result.message} O formulário foi atualizado com as últimas leituras registradas.`,
+    });
   } catch (error) {
-    showToast(error.message, 6000);
+    showMessage({
+      type: "error",
+      title: "Não foi possível enviar",
+      message: error.message,
+    });
   } finally {
     setReadingsButtonLoading(submitButton, false);
   }
@@ -369,4 +386,29 @@ function formatDate(value) {
 function setReadingsButtonLoading(button, loading) {
   button.disabled = loading;
   button.textContent = loading ? "Enviando leituras..." : "Enviar todas as leituras";
+}
+
+function showMessage({ type = "info", title, message }) {
+  const labels = {
+    success: "Operação concluída",
+    error: "Ocorreu um problema",
+    warning: "Atenção necessária",
+    info: "Informação",
+  };
+  const icons = {
+    success: "✓",
+    error: "!",
+    warning: "!",
+    info: "i",
+  };
+
+  messageDialog.dataset.type = type;
+  messageDialogIcon.textContent = icons[type];
+  messageDialogEyebrow.textContent = labels[type];
+  messageDialogTitle.textContent = title;
+  messageDialogText.textContent = message;
+
+  if (!messageDialog.open) {
+    messageDialog.showModal();
+  }
 }
