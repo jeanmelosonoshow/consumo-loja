@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Formulário para cadastro de medidores e lançamento de consumo das lojas."
+    />
+    <title>Consumo das lojas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="brand-mark" aria-hidden="true">CL</span>
+        <div>
+          <strong>Consumo das lojas</strong>
+          <span>Controle diário de recursos</span>
+        </div>
+      </div>
+      <div class="branch-badge">
+        <span>Filial</span>
+        <strong id="branch-name">Carregando...</strong>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">Leitura diária</p>
+          <h1>Energia e água</h1>
+          <p>
+            Cadastre e confira os relógios disponíveis para esta filial.
+          </p>
+        </div>
+        <div class="today">
+          <span>Data de referência</span>
+          <strong id="reference-date"></strong>
+        </div>
+      </section>
+
+      <div id="missing-branch" class="notice notice--warning" hidden>
+        <strong>Filial não identificada.</strong>
+        Abra esta página com o parâmetro
+        <code>?IDFILIAL_USR=123</code> para testar o formulário.
+      </div>
+
+      <div class="resource-grid">
+        <section class="resource-card resource-card--energy">
+          <div class="resource-card__header">
+            <div class="resource-title">
+              <span class="resource-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" />
+                </svg>
+              </span>
+              <div>
+                <p>Recurso</p>
+                <h2>Energia</h2>
+              </div>
+            </div>
+            <button
+              class="button button--energy"
+              type="button"
+              data-open-meter="ENERGIA"
+            >
+              <span aria-hidden="true">+</span>
+              Cadastrar relógio
+            </button>
+          </div>
+
+          <div class="meter-list" id="energy-meters"></div>
+        </section>
+
+        <section class="resource-card resource-card--water">
+          <div class="resource-card__header">
+            <div class="resource-title">
+              <span class="resource-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2S5.5 9.1 5.5 14.3a6.5 6.5 0 0 0 13 0C18.5 9.1 12 2 12 2Z"
+                  />
+                </svg>
+              </span>
+              <div>
+                <p>Recurso</p>
+                <h2>Água</h2>
+              </div>
+            </div>
+            <button
+              class="button button--water"
+              type="button"
+              data-open-meter="AGUA"
+            >
+              <span aria-hidden="true">+</span>
+              Cadastrar relógio
+            </button>
+          </div>
+
+          <div class="meter-list" id="water-meters"></div>
+        </section>
+      </div>
+    </main>
+
+    <dialog id="meter-dialog" class="dialog">
+      <form id="meter-form" method="dialog">
+        <div class="dialog__header">
+          <div>
+            <p class="eyebrow">Novo cadastro</p>
+            <h2 id="dialog-title">Cadastrar relógio</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            data-close-dialog
+            aria-label="Fechar"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="form-field">
+          <label for="meter-nickname">Apelido do relógio</label>
+          <input
+            id="meter-nickname"
+            name="nickname"
+            type="text"
+            maxlength="60"
+            placeholder="Ex.: Relógio principal"
+            autocomplete="off"
+            required
+          />
+          <small>Use um nome fácil de reconhecer pela equipe.</small>
+        </div>
+
+        <div class="form-field">
+          <label for="meter-number">Número do relógio</label>
+          <input
+            id="meter-number"
+            name="number"
+            type="text"
+            maxlength="50"
+            placeholder="Ex.: 001234567"
+            autocomplete="off"
+            required
+          />
+          <small>Informe o número exibido no equipamento ou na conta.</small>
+        </div>
+
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+
+        <div class="dialog__actions">
+          <button type="button" class="button button--secondary" data-close-dialog>
+            Cancelar
+          </button>
+          <button type="submit" class="button button--primary">
+            Salvar relógio
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
