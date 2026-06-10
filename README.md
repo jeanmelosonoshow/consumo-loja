@@ -75,6 +75,29 @@ Para bancos que já possuem a tabela, execute também:
 database/002_status_cadastro_contador.sql
 ```
 
+Para criar o histórico de leituras, execute:
+
+```text
+database/003_leitura_contador.sql
+```
+
+A tabela `leitura_contador` armazena:
+
+```text
+ID_LEITURA
+IDFILIAL_USR
+ID_CONTADOR
+DATA_LEITURA
+LEITURA
+LEITURA_ANTERIOR
+DATA_REGISTRO
+```
+
+Ao inserir uma leitura, o banco identifica automaticamente a leitura
+imediatamente anterior pela `DATA_LEITURA`. Se uma leitura retroativa for
+inserida entre dois registros, o campo `LEITURA_ANTERIOR` do registro seguinte
+também é atualizado.
+
 A integração Neon da Vercel deve disponibilizar uma destas variáveis:
 
 ```text
