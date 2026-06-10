@@ -356,7 +356,6 @@ function initializeHeightReporting() {
 
 function formatReading(value) {
   return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 3,
     maximumFractionDigits: 3,
   }).format(Number(value));
 }
