@@ -111,3 +111,15 @@ Data e valor são obrigatórios para todos os contadores. Motivo e observação
 serão obrigatórios somente quando o aumento ultrapassar o percentual que ainda
 será definido. Nesta etapa, o envio valida os campos, mas ainda não grava as
 leituras no banco.
+
+## Altura automática no Adianti
+
+O formulário envia sua altura ao contêiner pai pela mensagem:
+
+```text
+consumo-loja:height
+```
+
+O HTML que incorpora o formulário deve ouvir essa mensagem e atualizar a
+altura do `iframe`. Assim, a página principal controla a rolagem e o formulário
+não exibe uma barra de rolagem interna.

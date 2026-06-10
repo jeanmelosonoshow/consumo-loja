@@ -42,6 +42,7 @@ function initialize() {
   meterForm.addEventListener("submit", saveMeter);
   readingsForm.addEventListener("submit", validateReadings);
   dialog.addEventListener("close", resetForm);
+  initializeHeightReporting();
   loadMeters();
 }
 
@@ -283,6 +284,23 @@ function showToast(message) {
 function setButtonLoading(button, loading) {
   button.disabled = loading;
   button.textContent = loading ? "Salvando..." : "Salvar relógio";
+}
+
+function initializeHeightReporting() {
+  const reportHeight = () => {
+    window.parent.postMessage(
+      {
+        type: "consumo-loja:height",
+        height: document.documentElement.scrollHeight,
+      },
+      "*",
+    );
+  };
+
+  const observer = new ResizeObserver(reportHeight);
+  observer.observe(document.documentElement);
+  window.addEventListener("load", reportHeight);
+  reportHeight();
 }
 
 function validateReadings(event) {
