@@ -44,7 +44,6 @@ function initialize() {
 
 function openMeterDialog(type) {
   selectedMeterType = type;
-  document.querySelector("#meter-type").value = type;
   dialogTitle.textContent = `Cadastrar relógio de ${
     type === "ENERGIA" ? "energia" : "água"
   }`;
@@ -56,7 +55,6 @@ async function saveMeter(event) {
   event.preventDefault();
 
   const formData = new FormData(meterForm);
-  const meterType = formData.get("type");
   const nickname = formData.get("nickname").trim();
   const number = formData.get("number").trim();
   const submitButton = meterForm.querySelector('[type="submit"]');
@@ -64,7 +62,7 @@ async function saveMeter(event) {
     IDFILIAL_USR: branchId,
     APELIDO_CONTADOR: nickname,
     NUMERO_CONTADOR: number,
-    TIPO_CONTADOR: meterType,
+    TIPO_CONTADOR: selectedMeterType,
   };
 
   try {

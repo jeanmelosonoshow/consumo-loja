@@ -36,11 +36,11 @@ TIPO_CONTADOR
 ```
 
 `TIPO_CONTADOR` é necessário para distinguir os relógios de energia e água.
-No formulário, ele é apresentado como uma lista de seleção:
+O tipo é definido automaticamente conforme a seção onde o cadastro foi aberto:
 
 ```text
-Energia elétrica -> ENERGIA
-Água             -> AGUA
+Seção Energia -> ENERGIA
+Seção Água    -> AGUA
 ```
 
 `ID_CONTADOR` deve ser a chave primária gerada pelo banco.

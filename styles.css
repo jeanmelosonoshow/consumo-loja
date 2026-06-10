@@ -27,8 +27,7 @@ body {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
 }
 
@@ -418,8 +417,7 @@ button {
   font-weight: 700;
 }
 
-.form-field input,
-.form-field select {
+.form-field input {
   width: 100%;
   height: 46px;
   padding: 0 12px;
@@ -428,8 +426,7 @@ button {
   outline: none;
 }
 
-.form-field input:focus,
-.form-field select:focus {
+.form-field input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgb(23 107 85 / 12%);
 }
