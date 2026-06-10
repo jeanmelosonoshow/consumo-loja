@@ -57,9 +57,11 @@ async function listMeters(request, response, sql) {
       apelido_contador AS "APELIDO_CONTADOR",
       numero_contador AS "NUMERO_CONTADOR",
       tipo_contador AS "TIPO_CONTADOR",
+      status AS "STATUS",
       data_cadastro AS "DATA_CADASTRO"
     FROM cadastro_contador
     WHERE idfilial_usr = ${filial}
+      AND status = 'T'
     ORDER BY tipo_contador, apelido_contador
   `;
 
@@ -98,15 +100,17 @@ async function createMeter(request, response, sql) {
         idfilial_usr,
         apelido_contador,
         numero_contador,
-        tipo_contador
+        tipo_contador,
+        status
       )
-      VALUES (${filial}, ${nickname}, ${number}, ${type})
+      VALUES (${filial}, ${nickname}, ${number}, ${type}, 'T')
       RETURNING
         id_contador AS "ID_CONTADOR",
         idfilial_usr AS "IDFILIAL_USR",
         apelido_contador AS "APELIDO_CONTADOR",
         numero_contador AS "NUMERO_CONTADOR",
         tipo_contador AS "TIPO_CONTADOR",
+        status AS "STATUS",
         data_cadastro AS "DATA_CADASTRO"
     `;
 

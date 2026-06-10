@@ -33,6 +33,7 @@ APELIDO_CONTADOR
 NUMERO_CONTADOR
 DATA_CADASTRO
 TIPO_CONTADOR
+STATUS
 ```
 
 `TIPO_CONTADOR` é necessário para distinguir os relógios de energia e água.
@@ -44,6 +45,16 @@ Seção Água    -> AGUA
 ```
 
 `ID_CONTADOR` deve ser a chave primária gerada pelo banco.
+
+`STATUS` controla se o contador está disponível para receber leituras:
+
+```text
+T -> Ativo
+F -> Inativo
+```
+
+A API retorna apenas contadores ativos. Novos cadastros são gravados
+automaticamente com `STATUS = 'T'`.
 
 Também é recomendável criar uma restrição única para:
 
@@ -57,6 +68,12 @@ Isso impede o cadastro repetido do mesmo relógio na mesma filial.
 
 Execute o arquivo `database/001_cadastro_contador.sql` no Neon antes do
 primeiro teste.
+
+Para bancos que já possuem a tabela, execute também:
+
+```text
+database/002_status_cadastro_contador.sql
+```
 
 A integração Neon da Vercel deve disponibilizar uma destas variáveis:
 
