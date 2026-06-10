@@ -37,7 +37,7 @@
           <p class="eyebrow">Leitura diária</p>
           <h1>Energia e água</h1>
           <p>
-            Cadastre e confira os relógios disponíveis para esta filial.
+            Informe a leitura de todos os relógios disponíveis para esta filial.
           </p>
         </div>
         <div class="today">
@@ -52,8 +52,9 @@
         <code>?$a_system_user_unit_code=123</code> para testar o formulário.
       </div>
 
-      <div class="resource-grid">
-        <section class="resource-card resource-card--energy">
+      <form id="readings-form">
+        <div class="resource-grid">
+          <section class="resource-card resource-card--energy">
           <div class="resource-card__header">
             <div class="resource-title">
               <span class="resource-icon" aria-hidden="true">
@@ -77,9 +78,9 @@
           </div>
 
           <div class="meter-list" id="energy-meters"></div>
-        </section>
+          </section>
 
-        <section class="resource-card resource-card--water">
+          <section class="resource-card resource-card--water">
           <div class="resource-card__header">
             <div class="resource-title">
               <span class="resource-icon" aria-hidden="true">
@@ -105,8 +106,21 @@
           </div>
 
           <div class="meter-list" id="water-meters"></div>
-        </section>
-      </div>
+          </section>
+        </div>
+
+        <div id="readings-actions" class="readings-actions" hidden>
+          <div>
+            <strong>Envio conjunto</strong>
+            <span>
+              Preencha todos os relógios cadastrados antes de continuar.
+            </span>
+          </div>
+          <button class="button button--primary" type="submit">
+            Enviar todas as leituras
+          </button>
+        </div>
+      </form>
     </main>
 
     <dialog id="meter-dialog" class="dialog">

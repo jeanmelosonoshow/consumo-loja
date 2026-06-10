@@ -77,3 +77,20 @@ POST /api/contadores
 
 O parâmetro recebido via GET deve ser validado pela API antes de qualquer
 consulta ou gravação. Ele não deve ser considerado autorização por si só.
+
+## Formulário de leituras
+
+Para cada contador cadastrado, o formulário apresenta:
+
+```text
+Data da leitura
+Valor da leitura em kWh ou m³
+Motivo
+Observação
+Última leitura registrada
+```
+
+Data e valor são obrigatórios para todos os contadores. Motivo e observação
+serão obrigatórios somente quando o aumento ultrapassar o percentual que ainda
+será definido. Nesta etapa, o envio valida os campos, mas ainda não grava as
+leituras no banco.
