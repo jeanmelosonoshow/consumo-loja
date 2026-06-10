@@ -8,12 +8,21 @@ diário do consumo de energia e água das lojas.
 Abra `index.html` incluindo a filial na URL:
 
 ```text
-index.html?IDFILIAL_USR=10&NOME_FILIAL=Loja%20Centro
+index.html?$a_system_user_unit_code=10
 ```
 
 Nesta primeira versão, os cadastros são gravados no `localStorage` do
 navegador. Isso permite validar o fluxo e a interface antes da API Vercel e do
 banco próprio estarem disponíveis.
+
+O formulário reconhece o parâmetro enviado pelo Adianti:
+
+```text
+$a_system_user_unit_code
+```
+
+Por compatibilidade durante os testes, `IDFILIAL_USR` também é aceito. O valor
+recebido é gravado como `IDFILIAL_USR` nos registros dos contadores.
 
 ## Dados do contador
 

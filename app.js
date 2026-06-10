@@ -2,7 +2,11 @@ const STORAGE_KEY = "consumo-lojas:cadastro-contador";
 
 const params = new URLSearchParams(window.location.search);
 const branchId =
-  params.get("IDFILIAL_USR") ?? params.get("idfilial_usr") ?? "";
+  params.get("$a_system_user_unit_code") ??
+  params.get("a_system_user_unit_code") ??
+  params.get("IDFILIAL_USR") ??
+  params.get("idfilial_usr") ??
+  "";
 const branchLabel =
   params.get("NOME_FILIAL") ?? params.get("nome_filial") ?? branchId;
 
