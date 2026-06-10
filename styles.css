@@ -27,7 +27,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -366,6 +367,12 @@ button {
   line-height: 1.5;
 }
 
+.empty-state--error {
+  border-color: #e8baba;
+  background: #fff8f8;
+  color: #a52c2c;
+}
+
 .dialog {
   width: min(510px, calc(100% - 30px));
   padding: 0;
@@ -411,7 +418,8 @@ button {
   font-weight: 700;
 }
 
-.form-field input {
+.form-field input,
+.form-field select {
   width: 100%;
   height: 46px;
   padding: 0 12px;
@@ -420,7 +428,8 @@ button {
   outline: none;
 }
 
-.form-field input:focus {
+.form-field input:focus,
+.form-field select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgb(23 107 85 / 12%);
 }

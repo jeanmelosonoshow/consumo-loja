@@ -11,9 +11,7 @@ Abra `index.html` incluindo a filial na URL:
 index.html?$a_system_user_unit_code=10
 ```
 
-Nesta primeira versão, os cadastros são gravados no `localStorage` do
-navegador. Isso permite validar o fluxo e a interface antes da API Vercel e do
-banco próprio estarem disponíveis.
+Os cadastros são gravados no banco Neon pela API hospedada na Vercel.
 
 O formulário reconhece o parâmetro enviado pelo Adianti:
 
@@ -38,6 +36,13 @@ TIPO_CONTADOR
 ```
 
 `TIPO_CONTADOR` é necessário para distinguir os relógios de energia e água.
+No formulário, ele é apresentado como uma lista de seleção:
+
+```text
+Energia elétrica -> ENERGIA
+Água             -> AGUA
+```
+
 `ID_CONTADOR` deve ser a chave primária gerada pelo banco.
 
 Também é recomendável criar uma restrição única para:
@@ -48,9 +53,22 @@ IDFILIAL_USR + TIPO_CONTADOR + NUMERO_CONTADOR
 
 Isso impede o cadastro repetido do mesmo relógio na mesma filial.
 
-## Integração futura
+## Banco de dados
 
-A API deverá expor, inicialmente:
+Execute o arquivo `database/001_cadastro_contador.sql` no Neon antes do
+primeiro teste.
+
+A integração Neon da Vercel deve disponibilizar uma destas variáveis:
+
+```text
+DATABASE_URL
+POSTGRES_URL
+POSTGRES_URL_NON_POOLING
+```
+
+## API
+
+A aplicação expõe:
 
 ```text
 GET  /api/contadores?filial={IDFILIAL_USR}
