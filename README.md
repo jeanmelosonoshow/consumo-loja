@@ -246,6 +246,14 @@ são o supervisor. As demais categorias, códigos ausentes ou inválidos
 permanecem limitados à filial recebida do Adianti. Pagamentos e leituras
 validam novamente essa autorização na API antes de retornar múltiplas filiais.
 
+Para reduzir falhas transitórias do Firebird, o backend reaproveita as
+permissões consultadas por alguns minutos e realiza novas tentativas de conexão
+antes de informar indisponibilidade. O dashboard também repete silenciosamente
+consultas que retornarem indisponibilidade temporária.
+
+Quando não existe código de funcionário, a identificação de acesso usa
+diretamente a filial do Adianti e não abre uma conexão adicional com o ERP.
+
 Quando `a_system_user_custom_code` estiver vazio ou não for substituído pelo
 Adianti, nenhuma consulta multifilial será liberada. Nesse caso, o dashboard
 utiliza exclusivamente `a_system_user_unit_code`.

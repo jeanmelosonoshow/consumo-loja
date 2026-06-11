@@ -50,7 +50,7 @@ async function initializeDashboard() {
   }
 
   try {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `/api/dashboard-acessos?filial=${encodeURIComponent(
         branchId,
       )}&funcionario=${encodeURIComponent(employeeCode)}`,
@@ -77,7 +77,7 @@ async function loadDashboard() {
     filiais: selectedBranches.join(","),
   });
   const [paymentResponse, readingResponse] = await Promise.all([
-    fetch(`/api/dashboard-pagamentos?${query}`),
+    fetchWithRetry(`/api/dashboard-pagamentos?${query}`),
     fetch(`/api/dashboard-leituras?${query}`),
   ]);
   const [paymentData, readingData] = await Promise.all([
@@ -88,11 +88,33 @@ async function loadDashboard() {
   if (!paymentResponse.ok) throw new Error(paymentData.message);
   if (!readingResponse.ok) throw new Error(readingData.message);
 
+  mergeSelectedBranchMetadata(paymentData.filiais ?? []);
   renderDashboard(
     paymentData,
     readingData.leituras ?? [],
     await loadSelectedBranchRates(),
   );
+}
+
+function mergeSelectedBranchMetadata(branches) {
+  branches.forEach((branch) => {
+    const index = dashboardAccess.filiais.findIndex(
+      (allowed) => allowed.codigo === branch.codigo,
+    );
+    if (index >= 0) dashboardAccess.filiais[index] = branch;
+  });
+}
+
+async function fetchWithRetry(url, attempts = 3) {
+  let response;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    response = await fetch(url);
+    if (response.status !== 503 || attempt === attempts) return response;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 700));
+  }
+
+  return response;
 }
 
 async function loadSelectedBranchRates() {
@@ -101,6 +123,7 @@ async function loadSelectedBranchRates() {
   );
   const rateGroups = await Promise.all(
     branches.map(async (branch) => {
+      if (!/^[A-Z]{2}$/.test(branch.uf)) return [];
       const query = new URLSearchParams({
         filial: branch.codigo,
         uf: branch.uf,

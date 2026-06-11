@@ -40,9 +40,19 @@ export default async function handler(request, response) {
       ORDER BY 7,8,1,6
     `, branches);
     const payments = rows.map(normalizePayment);
-    const selectedMetadata = access.filiais.filter((branch) =>
-      branches.includes(branch.codigo),
-    );
+    const selectedMetadata = access.filiais
+      .filter((branch) => branches.includes(branch.codigo))
+      .map((branch) => {
+        const payment = payments.find((item) => item.filial === branch.codigo);
+        return payment
+          ? {
+              codigo: payment.filial,
+              nome: payment.nomeFilial,
+              cidade: payment.cidade,
+              uf: payment.uf,
+            }
+          : branch;
+      });
 
     return response.status(200).json({
       filial: selectedMetadata.length === 1 ? selectedMetadata[0] : null,
