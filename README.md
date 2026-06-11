@@ -248,8 +248,9 @@ validam novamente essa autorização na API antes de retornar múltiplas filiais
 
 Para reduzir falhas transitórias do Firebird, o backend reaproveita as
 permissões consultadas por alguns minutos e realiza novas tentativas de conexão
-antes de informar indisponibilidade. O dashboard também repete silenciosamente
-consultas que retornarem indisponibilidade temporária.
+antes de informar indisponibilidade. O dashboard também realiza até cinco
+tentativas silenciosas para consultas que retornarem indisponibilidade
+temporária.
 
 Quando não existe código de funcionário, a identificação de acesso usa
 diretamente a filial do Adianti e não abre uma conexão adicional com o ERP.

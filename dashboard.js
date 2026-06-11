@@ -105,13 +105,13 @@ function mergeSelectedBranchMetadata(branches) {
   });
 }
 
-async function fetchWithRetry(url, attempts = 3) {
+async function fetchWithRetry(url, attempts = 5) {
   let response;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     response = await fetch(url);
     if (response.status !== 503 || attempt === attempts) return response;
-    await new Promise((resolve) => setTimeout(resolve, attempt * 700));
+    await new Promise((resolve) => setTimeout(resolve, attempt * 900));
   }
 
   return response;
