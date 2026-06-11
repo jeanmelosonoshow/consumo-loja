@@ -100,8 +100,8 @@ export default async function handler(request, response) {
           cidade: normalizeValue(row.CIDADE),
           uf: normalizeValue(row.UF),
           idConta: normalizeValue(row.IDCONTA),
-          nomeConta: normalizeValue(row.NOMECONTA),
-          recurso: classifyResource(row.NOMECONTA),
+          nomeConta: normalizeAccountName(row.IDCONTA, row.NOMECONTA),
+          recurso: classifyResource(row.IDCONTA, row.NOMECONTA),
           ano: Number(row.ANO_COMPETENCIA),
           mes: Number(row.MES_COMPETENCIA),
           pagamento: Number(row.PAGAMENTO ?? 0),
@@ -133,7 +133,11 @@ function normalizeValue(value) {
   return String(value ?? "").trim();
 }
 
-function classifyResource(name) {
+function classifyResource(accountId, name) {
+  const id = normalizeValue(accountId);
+  if (id === "1.02.01.03") return "ENERGIA";
+  if (id === "1.02.01.02") return "AGUA";
+
   const normalized = normalizeValue(name).toUpperCase();
   if (normalized.includes("AGUA") || normalized.includes("ÁGUA")) return "AGUA";
   if (
@@ -144,4 +148,11 @@ function classifyResource(name) {
     return "ENERGIA";
   }
   return "OUTRO";
+}
+
+function normalizeAccountName(accountId, name) {
+  const resource = classifyResource(accountId, name);
+  if (resource === "ENERGIA") return "Energia elétrica";
+  if (resource === "AGUA") return "Água";
+  return normalizeValue(name);
 }

@@ -203,3 +203,10 @@ dashboard.html?a_system_user_unit_code={$a_system_user_unit_code}
 Ela combina pagamentos de energia e água consultados no Firebird com o consumo
 medido no Neon. A projeção mensal usa a média diária registrada e, quando
 possível, o custo efetivo histórico da própria filial.
+
+O dashboard classifica as contas do ERP por:
+
+```text
+1.02.01.03 -> Energia
+1.02.01.02 -> Água
+```
