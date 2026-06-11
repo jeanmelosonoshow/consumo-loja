@@ -135,6 +135,8 @@ async function loadSelectedBranchRates() {
 function renderBranchFilter() {
   const filter = document.querySelector("#branch-filter");
   const options = document.querySelector("#branch-options");
+  const trigger = document.querySelector("#branch-select-trigger");
+  const menu = document.querySelector("#branch-select-menu");
   filter.hidden = !dashboardAccess.multiplaSelecao;
   document.querySelector("#access-description").textContent =
     dashboardAccess.multiplaSelecao
@@ -154,6 +156,35 @@ function renderBranchFilter() {
     }),
   );
 
+  updateBranchSelectionSummary();
+  trigger.addEventListener("click", () => {
+    const willOpen = menu.hidden;
+    menu.hidden = !willOpen;
+    trigger.setAttribute("aria-expanded", String(willOpen));
+  });
+
+  document.querySelector("#select-all-branches").addEventListener("click", () => {
+    options.querySelectorAll("input").forEach((input) => {
+      input.checked = true;
+    });
+    updateBranchSelectionSummary(true);
+  });
+
+  document.querySelector("#clear-branches").addEventListener("click", () => {
+    options.querySelectorAll("input").forEach((input) => {
+      input.checked = false;
+    });
+    updateBranchSelectionSummary(true);
+  });
+
+  options.addEventListener("change", () => updateBranchSelectionSummary(true));
+  document.addEventListener("click", (event) => {
+    if (!document.querySelector("#branch-select").contains(event.target)) {
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  });
+
   document.querySelector("#apply-branches").addEventListener("click", async () => {
     const checked = Array.from(
       document.querySelectorAll("#branch-options input:checked"),
@@ -163,6 +194,9 @@ function renderBranchFilter() {
       return;
     }
     selectedBranches = checked;
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    updateBranchSelectionSummary();
     document.querySelector("#dashboard-error").hidden = true;
     try {
       await loadDashboard();
@@ -170,6 +204,33 @@ function renderBranchFilter() {
       showError(error.message || "Não foi possível atualizar o dashboard.");
     }
   });
+}
+
+function updateBranchSelectionSummary(usePendingSelection = false) {
+  const checked = usePendingSelection
+    ? Array.from(document.querySelectorAll("#branch-options input:checked")).map(
+        (input) => input.value,
+      )
+    : selectedBranches;
+  const summary = document.querySelector("#branch-select-summary");
+
+  if (!checked.length) {
+    summary.textContent = "Nenhuma filial selecionada";
+    return;
+  }
+
+  if (checked.length === dashboardAccess.filiais.length) {
+    summary.textContent = `Todas as filiais (${checked.length})`;
+    return;
+  }
+
+  const first = dashboardAccess.filiais.find(
+    (branch) => branch.codigo === checked[0],
+  );
+  summary.textContent =
+    checked.length === 1
+      ? `${first.codigo} · ${first.nome}`
+      : `${first.codigo} · ${first.nome} + ${checked.length - 1} filial(is)`;
 }
 
 function renderDashboard(paymentData, readings, rates) {
@@ -691,10 +752,15 @@ function escapeHtml(value) {
 
 function initializeHeightReporting() {
   const reportHeight = () => {
+    const contentHeight = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      900,
+    );
     window.parent.postMessage(
       {
         type: "consumo-loja:dashboard-height",
-        height: document.documentElement.scrollHeight,
+        height: contentHeight,
       },
       "*",
     );

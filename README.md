@@ -227,6 +227,26 @@ O dashboard envia sua altura total pela mensagem
 `consumo-loja:dashboard-height`, permitindo que o Adianti expanda o iframe e
 mostre todos os dados sem rolagem interna. O formulário mantém rolagem interna.
 
+O objeto HTML do Adianti deve manter uma altura mínima até receber a altura
+total enviada pelo dashboard:
+
+```html
+<iframe
+  id="consumo-dashboard"
+  src="https://consumo-loja.vercel.app/dashboard.html?a_system_user_unit_code={$a_system_user_unit_code}&a_system_user_custom_code={$a_system_user_custom_code}"
+  style="display:block; width:100%; min-height:calc(100vh - 90px); border:0;"
+  title="Dashboard de consumo">
+</iframe>
+<script>
+  window.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'consumo-loja:dashboard-height') {
+      document.getElementById('consumo-dashboard').style.height =
+        Math.max(event.data.height, window.innerHeight - 90) + 'px';
+    }
+  });
+</script>
+```
+
 O código do funcionário recebido em `a_system_user_custom_code` é consultado no
 Firebird. Funcionários ativos da categoria `DI` podem selecionar todas as
 filiais com supervisor. Funcionários `SU` podem selecionar as filiais em que

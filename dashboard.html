@@ -38,8 +38,27 @@
           <strong>Filiais exibidas no dashboard</strong>
           <span id="access-description"></span>
         </div>
-        <div id="branch-options" class="branch-options"></div>
-        <button id="apply-branches" type="button">Atualizar dashboard</button>
+        <div id="branch-select" class="branch-select">
+          <button
+            id="branch-select-trigger"
+            class="branch-select__trigger"
+            type="button"
+            aria-expanded="false"
+          >
+            <span id="branch-select-summary">Carregando filiais...</span>
+            <span class="branch-select__chevron">⌄</span>
+          </button>
+          <div id="branch-select-menu" class="branch-select__menu" hidden>
+            <div class="branch-select__actions">
+              <button id="select-all-branches" type="button">Selecionar todas</button>
+              <button id="clear-branches" type="button">Limpar</button>
+            </div>
+            <div id="branch-options" class="branch-options"></div>
+            <button id="apply-branches" class="branch-select__apply" type="button">
+              Aplicar seleção
+            </button>
+          </div>
+        </div>
       </section>
 
       <section class="metric-grid">

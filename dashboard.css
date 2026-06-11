@@ -16,6 +16,7 @@
 
 body {
   min-width: 320px;
+  min-height: 100vh;
   margin: 0;
   background: var(--background);
   color: var(--ink);
@@ -76,7 +77,7 @@ body {
   margin-bottom: 18px;
   padding: 18px 20px;
   display: grid;
-  grid-template-columns: minmax(220px, .8fr) minmax(280px, 1.6fr) auto;
+  grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.6fr);
   align-items: center;
   gap: 18px;
   border: 1px solid var(--line);
@@ -87,27 +88,91 @@ body {
 
 .branch-filter strong,
 .branch-filter span { display: block; }
-.branch-filter span { margin-top: 4px; color: var(--muted); font-size: .7rem; }
-.branch-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.branch-filter > div:first-child > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .7rem;
+}
+
+.branch-select { position: relative; }
+
+.branch-select__trigger {
+  width: 100%;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fafcfc;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.branch-select__trigger[aria-expanded="true"] {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(23 107 85 / 10%);
+}
+
+.branch-select__chevron { color: var(--primary); font-size: 1rem; }
+
+.branch-select__menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  right: 0;
+  width: min(520px, 100%);
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 45px rgb(28 43 54 / 18%);
+}
+
+.branch-select__menu[hidden] { display: none; }
+.branch-options { max-height: 280px; overflow-y: auto; }
 
 .branch-option {
-  padding: 7px 9px;
+  padding: 9px 8px;
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border-bottom: 1px solid var(--line);
   color: var(--muted);
   font-size: .7rem;
 }
 
 .branch-option:has(input:checked) {
-  border-color: var(--primary);
   background: #edf7f3;
   color: var(--primary);
 }
 
-.branch-filter button {
+.branch-select__actions {
+  padding-bottom: 9px;
+  display: flex;
+  gap: 7px;
+  border-bottom: 1px solid var(--line);
+}
+
+.branch-select__actions button {
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.branch-select__apply {
+  width: 100%;
+  margin-top: 10px;
   padding: 10px 14px;
   border: 0;
   border-radius: 9px;
