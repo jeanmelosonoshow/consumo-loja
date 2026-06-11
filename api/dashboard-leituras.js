@@ -1,17 +1,13 @@
 import { neon } from "@neondatabase/serverless";
-
-const CODIGO_FILIAL_VALIDO = /^[A-Z0-9]{2}$/;
+import {
+  getDashboardAccess,
+  selectAuthorizedBranches,
+} from "./_dashboard-access.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
     return response.status(405).json({ message: "Método não permitido." });
-  }
-
-  const filial = String(request.query.filial ?? "").trim().toUpperCase();
-
-  if (!CODIGO_FILIAL_VALIDO.test(filial)) {
-    return response.status(400).json({ message: "Código da filial inválido." });
   }
 
   const connectionString =
@@ -28,10 +24,16 @@ export default async function handler(request, response) {
   const sql = neon(connectionString);
 
   try {
+    const access = await getDashboardAccess(
+      request.query.filial,
+      request.query.funcionario,
+    );
+    const branches = selectAuthorizedBranches(access, request.query.filiais);
     const readings = await sql`
       WITH consumos AS (
         SELECT
           l.id_leitura,
+          l.idfilial_usr,
           l.id_contador,
           c.apelido_contador,
           c.tipo_contador,
@@ -46,7 +48,7 @@ export default async function handler(request, response) {
           END AS consumo
         FROM leitura_contador l
         JOIN cadastro_contador c ON c.id_contador = l.id_contador
-        WHERE l.idfilial_usr = ${filial}
+        WHERE l.idfilial_usr = ANY(${branches}::text[])
           AND l.data_leitura >= CURRENT_DATE - INTERVAL '7 months'
       ),
       comparados AS (
@@ -60,6 +62,7 @@ export default async function handler(request, response) {
       )
       SELECT
         id_leitura AS "ID_LEITURA",
+        idfilial_usr AS "IDFILIAL_USR",
         id_contador AS "ID_CONTADOR",
         apelido_contador AS "APELIDO_CONTADOR",
         tipo_contador AS "TIPO_CONTADOR",
@@ -78,11 +81,13 @@ export default async function handler(request, response) {
       ORDER BY data_leitura, tipo_contador, apelido_contador
     `;
 
-    return response.status(200).json({ leituras: readings });
+    return response.status(200).json({ filiais: branches, leituras: readings });
   } catch (error) {
     console.error("Erro no dashboard de leituras:", error);
-    return response.status(500).json({
-      message: "Não foi possível consultar as leituras registradas.",
+    return response.status(error.statusCode ?? 500).json({
+      message: error.statusCode
+        ? error.message
+        : "Não foi possível consultar as leituras registradas.",
     });
   }
 }

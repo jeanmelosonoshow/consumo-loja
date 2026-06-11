@@ -32,6 +32,16 @@
     <main class="dashboard">
       <section id="dashboard-error" class="error-card" hidden></section>
 
+      <section id="branch-filter" class="branch-filter" hidden>
+        <div>
+          <p class="eyebrow">Abrangência</p>
+          <strong>Filiais exibidas no dashboard</strong>
+          <span id="access-description"></span>
+        </div>
+        <div id="branch-options" class="branch-options"></div>
+        <button id="apply-branches" type="button">Atualizar dashboard</button>
+      </section>
+
       <section class="metric-grid">
         <article class="metric-card metric-card--energy">
           <span>Consumo de energia no mês</span>
@@ -108,6 +118,7 @@
             <thead>
               <tr>
                 <th>Data</th>
+                <th>Filial</th>
                 <th>Recurso</th>
                 <th>Contador</th>
                 <th>Consumo</th>

@@ -72,6 +72,53 @@ body {
   padding: 26px 0 70px;
 }
 
+.branch-filter {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: minmax(220px, .8fr) minmax(280px, 1.6fr) auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.branch-filter strong,
+.branch-filter span { display: block; }
+.branch-filter span { margin-top: 4px; color: var(--muted); font-size: .7rem; }
+.branch-options { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.branch-option {
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: .7rem;
+}
+
+.branch-option:has(input:checked) {
+  border-color: var(--primary);
+  background: #edf7f3;
+  color: var(--primary);
+}
+
+.branch-filter button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 700;
+}
+
 .metric-grid,
 .chart-grid {
   display: grid;
@@ -259,6 +306,7 @@ th { color: var(--muted); font-size: .65rem; text-transform: uppercase; }
 }
 
 @media (max-width: 960px) {
+  .branch-filter { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chart-grid { grid-template-columns: 1fr; }
 }

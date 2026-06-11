@@ -7,6 +7,15 @@ const branchId = String(
 )
   .trim()
   .toUpperCase();
+const employeeCode = String(
+  params.get("a_system_user_custom_code") ??
+    params.get("$a_system_user_custom_code") ??
+    "",
+)
+  .trim()
+  .toUpperCase();
+let dashboardAccess = null;
+let selectedBranches = [];
 const REASON_LABELS = {
   USO_EXCEDENTE: "Uso excedente",
   ESQUECIMENTO: "Esquecimento",
@@ -41,35 +50,21 @@ async function initializeDashboard() {
   }
 
   try {
-    const [paymentResponse, readingResponse] = await Promise.all([
-      fetch(`/api/dashboard-pagamentos?filial=${encodeURIComponent(branchId)}`),
-      fetch(`/api/dashboard-leituras?filial=${encodeURIComponent(branchId)}`),
-    ]);
-    const [paymentData, readingData] = await Promise.all([
-      paymentResponse.json(),
-      readingResponse.json(),
-    ]);
-
-    if (!paymentResponse.ok) throw new Error(paymentData.message);
-    if (!readingResponse.ok) throw new Error(readingData.message);
-
-    const branch = paymentData.filial ?? {};
-    const rateResponse = await fetch(
-      `/api/dashboard-tarifas?filial=${encodeURIComponent(
+    const response = await fetch(
+      `/api/dashboard-acessos?filial=${encodeURIComponent(
         branchId,
-      )}&uf=${encodeURIComponent(branch.uf ?? "")}&cidade=${encodeURIComponent(
-        branch.cidade ?? "",
-      )}`,
+      )}&funcionario=${encodeURIComponent(employeeCode)}`,
     );
-    const rateData = await rateResponse.json();
+    dashboardAccess = await response.json();
+    if (!response.ok) throw new Error(dashboardAccess.message);
 
-    if (!rateResponse.ok) throw new Error(rateData.message);
-
-    renderDashboard(
-      paymentData,
-      readingData.leituras ?? [],
-      rateData.tarifas ?? [],
-    );
+    selectedBranches = dashboardAccess.filiais.some(
+      (branch) => branch.codigo === branchId,
+    )
+      ? [branchId]
+      : [dashboardAccess.filiais[0].codigo];
+    renderBranchFilter();
+    await loadDashboard();
     initializeHeightReporting();
   } catch (error) {
     showError(error.message || "Não foi possível carregar o dashboard.");
@@ -77,11 +72,118 @@ async function initializeDashboard() {
   }
 }
 
+async function loadDashboard() {
+  const query = new URLSearchParams({
+    filial: branchId,
+    funcionario: employeeCode,
+    filiais: selectedBranches.join(","),
+  });
+  const [paymentResponse, readingResponse] = await Promise.all([
+    fetch(`/api/dashboard-pagamentos?${query}`),
+    fetch(`/api/dashboard-leituras?${query}`),
+  ]);
+  const [paymentData, readingData] = await Promise.all([
+    paymentResponse.json(),
+    readingResponse.json(),
+  ]);
+
+  if (!paymentResponse.ok) throw new Error(paymentData.message);
+  if (!readingResponse.ok) throw new Error(readingData.message);
+
+  renderDashboard(
+    paymentData,
+    readingData.leituras ?? [],
+    await loadSelectedBranchRates(),
+  );
+}
+
+async function loadSelectedBranchRates() {
+  const branches = dashboardAccess.filiais.filter((branch) =>
+    selectedBranches.includes(branch.codigo),
+  );
+  const rateGroups = await Promise.all(
+    branches.map(async (branch) => {
+      const query = new URLSearchParams({
+        filial: branch.codigo,
+        uf: branch.uf,
+        cidade: branch.cidade,
+      });
+      const response = await fetch(`/api/dashboard-tarifas?${query}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      return data.tarifas ?? [];
+    }),
+  );
+
+  return ["ENERGIA", "AGUA"].map((resource) => {
+    const available = rateGroups
+      .flat()
+      .filter(
+        (rate) => rate.recurso === resource && Number(rate.valorUnitario) > 0,
+      );
+    if (!available.length) return { recurso: resource, origem: "INDISPONIVEL" };
+    return {
+      ...available[0],
+      valorUnitario:
+        available.reduce((sum, rate) => sum + Number(rate.valorUnitario), 0) /
+        available.length,
+      origem: available.length > 1 ? "MEDIA_FILIAIS" : available[0].origem,
+    };
+  });
+}
+
+function renderBranchFilter() {
+  const filter = document.querySelector("#branch-filter");
+  const options = document.querySelector("#branch-options");
+  filter.hidden = !dashboardAccess.multiplaSelecao;
+  document.querySelector("#access-description").textContent =
+    dashboardAccess.multiplaSelecao
+      ? `Categoria ${dashboardAccess.categoria}: selecione uma ou mais filiais`
+      : "Acesso restrito à filial identificada";
+
+  options.replaceChildren(
+    ...dashboardAccess.filiais.map((branch) => {
+      const label = document.createElement("label");
+      label.className = "branch-option";
+      label.innerHTML = `
+        <input type="checkbox" value="${escapeHtml(branch.codigo)}"
+          ${selectedBranches.includes(branch.codigo) ? "checked" : ""}>
+        <span>${escapeHtml(branch.codigo)} · ${escapeHtml(branch.nome)}</span>
+      `;
+      return label;
+    }),
+  );
+
+  document.querySelector("#apply-branches").addEventListener("click", async () => {
+    const checked = Array.from(
+      document.querySelectorAll("#branch-options input:checked"),
+    ).map((input) => input.value);
+    if (!checked.length) {
+      showError("Selecione pelo menos uma filial para atualizar o dashboard.");
+      return;
+    }
+    selectedBranches = checked;
+    document.querySelector("#dashboard-error").hidden = true;
+    try {
+      await loadDashboard();
+    } catch (error) {
+      showError(error.message || "Não foi possível atualizar o dashboard.");
+    }
+  });
+}
+
 function renderDashboard(paymentData, readings, rates) {
   const branch = paymentData.filial ?? {};
-  document.querySelector("#branch-description").textContent = branch.nome
-    ? `${branch.nome} · ${branch.cidade || ""}/${branch.uf || ""}`
-    : `Filial ${branchId}`;
+  document.querySelector("#branch-description").textContent =
+    selectedBranches.length > 1
+      ? `${selectedBranches.length} filiais selecionadas`
+      : branch.nome
+        ? `${branch.nome} · ${branch.cidade || ""}/${branch.uf || ""}`
+        : `Filial ${selectedBranches[0]}`;
+  document.querySelector("#branch-code").textContent =
+    selectedBranches.length > 1
+      ? `${selectedBranches.length} filiais`
+      : selectedBranches[0];
 
   const monthlyConsumption = aggregateMonthlyConsumption(readings);
   const monthlyPayments = aggregateMonthlyPayments(paymentData.pagamentos ?? []);
@@ -484,6 +586,7 @@ function describeRateOrigin(rate) {
     return `Histórico real de ${rate.competencias.length} competência(s)`;
   }
   if (rate.origem === "BANCO") return "Cadastro interno";
+  if (rate.origem === "MEDIA_FILIAIS") return "Média das filiais selecionadas";
   return rate.fatorAjuste > 1
     ? `Fallback calibrado (fator ${formatNumber(rate.fatorAjuste)})`
     : "Fallback genérico externo";
@@ -494,7 +597,7 @@ function renderIncreaseTable(increases) {
 
   if (!increases.length) {
     body.innerHTML =
-      '<tr><td class="empty-row" colspan="8">Nenhum aumento comparável encontrado.</td></tr>';
+      '<tr><td class="empty-row" colspan="9">Nenhum aumento comparável encontrado.</td></tr>';
     return;
   }
 
@@ -503,6 +606,7 @@ function renderIncreaseTable(increases) {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${formatDate(item.DATA_LEITURA)}</td>
+        <td>${escapeHtml(item.IDFILIAL_USR)}</td>
         <td>${item.TIPO_CONTADOR === "ENERGIA" ? "Energia" : "Água"}</td>
         <td>${escapeHtml(item.APELIDO_CONTADOR)}</td>
         <td>${formatConsumption(item.CONSUMO)}</td>

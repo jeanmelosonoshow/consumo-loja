@@ -143,9 +143,10 @@ GET  /api/contadores?filial={IDFILIAL_USR}
 POST /api/contadores
 POST /api/leituras
 POST /api/login
-GET  /api/dashboard-pagamentos?filial={IDFILIAL_USR}
-GET  /api/dashboard-leituras?filial={IDFILIAL_USR}
+GET  /api/dashboard-pagamentos?filial={IDFILIAL_USR}&funcionario={IDFUNCIONARIO}&filiais={LISTA}
+GET  /api/dashboard-leituras?filial={IDFILIAL_USR}&funcionario={IDFUNCIONARIO}&filiais={LISTA}
 GET  /api/dashboard-tarifas?filial={IDFILIAL_USR}&uf={UF}&cidade={CIDADE}
+GET  /api/dashboard-acessos?filial={IDFILIAL_USR}&funcionario={IDFUNCIONARIO}
 ```
 
 O parâmetro recebido via GET deve ser validado pela API antes de qualquer
@@ -215,7 +216,7 @@ espaço disponível no Adianti e rolagem interna nos respectivos `iframes`.
 A página secundária `dashboard.html` é destinada ao Adianti:
 
 ```text
-dashboard.html?a_system_user_unit_code={$a_system_user_unit_code}
+dashboard.html?a_system_user_unit_code={$a_system_user_unit_code}&a_system_user_custom_code={$a_system_user_custom_code}
 ```
 
 Ela combina pagamentos de energia e água consultados no Firebird com o consumo
@@ -225,6 +226,13 @@ possível, o custo efetivo histórico da própria filial.
 O dashboard envia sua altura total pela mensagem
 `consumo-loja:dashboard-height`, permitindo que o Adianti expanda o iframe e
 mostre todos os dados sem rolagem interna. O formulário mantém rolagem interna.
+
+O código do funcionário recebido em `a_system_user_custom_code` é consultado no
+Firebird. Funcionários ativos da categoria `DI` podem selecionar todas as
+filiais com supervisor. Funcionários `SU` podem selecionar as filiais em que
+são o supervisor. As demais categorias, códigos ausentes ou inválidos
+permanecem limitados à filial recebida do Adianti. Pagamentos e leituras
+validam novamente essa autorização na API antes de retornar múltiplas filiais.
 
 A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela
