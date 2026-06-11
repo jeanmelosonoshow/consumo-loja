@@ -359,7 +359,7 @@ function renderChart(selector, data, currency) {
 
 function createBar(value, max, water, currency) {
   const height = Math.max(2, (Number(value) / max) * 100);
-  const formatted = currency ? formatCurrency(value) : formatNumber(value);
+  const formatted = currency ? formatCurrency(value) : formatConsumption(value);
   return `<div class="chart-bar ${water ? "chart-bar--water" : ""}"
     style="height:${height}%"
     title="${water ? "Água" : "Energia"}: ${formatted}"></div>`;
@@ -505,7 +505,7 @@ function renderIncreaseTable(increases) {
         <td>${formatDate(item.DATA_LEITURA)}</td>
         <td>${item.TIPO_CONTADOR === "ENERGIA" ? "Energia" : "Água"}</td>
         <td>${escapeHtml(item.APELIDO_CONTADOR)}</td>
-        <td>${formatNumber(item.CONSUMO)}</td>
+        <td>${formatConsumption(item.CONSUMO)}</td>
         <td class="increase-badge">+${formatNumber(item.VARIACAO_PERCENTUAL)}%</td>
         <td>${escapeHtml(REASON_CATEGORIES[item.MOTIVO] ?? "Não informada")}</td>
         <td>${escapeHtml(REASON_LABELS[item.MOTIVO] ?? item.MOTIVO ?? "Não informado")}</td>
@@ -560,7 +560,13 @@ function formatNumber(value) {
 }
 
 function formatUnit(value, unit) {
-  return `${formatNumber(value)} ${unit}`;
+  return `${formatConsumption(value)} ${unit}`;
+}
+
+function formatConsumption(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(Number(value) || 0));
 }
 
 function setText(selector, value) {

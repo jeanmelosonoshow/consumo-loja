@@ -92,9 +92,15 @@ async function createReadings(request, response, sql) {
     const date = normalizeText(reading.DATA_LEITURA);
     const value = Number(reading.LEITURA);
 
-    if (!DATA_VALIDA.test(date) || !Number.isFinite(value) || value < 0) {
+    if (
+      !DATA_VALIDA.test(date) ||
+      !Number.isFinite(value) ||
+      !Number.isInteger(value) ||
+      value < 0
+    ) {
       return response.status(400).json({
-        message: "Uma ou mais leituras possuem data ou valor inválido.",
+        message:
+          "Uma ou mais leituras possuem data inválida ou valor que não é um número inteiro.",
       });
     }
   }

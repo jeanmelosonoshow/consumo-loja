@@ -93,6 +93,12 @@ Para cadastrar tarifas utilizadas nas projeções, execute:
 database/005_tarifa_referencia.sql
 ```
 
+Para impedir novas leituras com casas decimais diretamente no banco, execute:
+
+```text
+database/006_leitura_inteira.sql
+```
+
 A tabela `leitura_contador` armazena:
 
 ```text
@@ -253,6 +259,9 @@ consumo estimado = valor pago / tarifa de referência
 Nos cartões de tendência, a variação percentual entre a projeção e sua
 referência é destacada com sinal positivo ou negativo e a indicação de aumento
 ou redução.
+
+Os valores de consumo de energia e água são exibidos como números inteiros. As
+tarifas, percentuais e valores financeiros preservam suas casas decimais.
 
 O dashboard classifica as contas do ERP por:
 

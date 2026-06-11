@@ -345,9 +345,9 @@ function createReadingFields(meter, type) {
         name="value-${meter.ID_CONTADOR}"
         type="number"
         min="0"
-        step="0.001"
-        inputmode="decimal"
-        placeholder="0,000"
+        step="1"
+        inputmode="numeric"
+        placeholder="0"
         required
       />
     </div>
