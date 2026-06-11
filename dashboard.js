@@ -305,6 +305,7 @@ function renderDashboard(paymentData, readings, rates) {
   renderChart("#payment-chart", monthlyPayments, true);
   renderProjections(projections);
   renderIncreaseTable(increases);
+  renderBranchAverageChart(paymentData.pagamentos ?? []);
 }
 
 function aggregateMonthlyConsumption(readings) {
@@ -335,6 +336,39 @@ function aggregateMonthlyPayments(payments) {
   });
 
   return result;
+}
+
+function aggregateAveragePaymentsByBranch(payments) {
+  const result = new Map();
+
+  payments.forEach((payment) => {
+    if (!["ENERGIA", "AGUA"].includes(payment.recurso)) return;
+    const branch = String(payment.filial);
+    const values = result.get(branch) ?? {
+      nome: payment.nomeFilial || `Filial ${branch}`,
+      ENERGIA: { total: 0, months: new Set() },
+      AGUA: { total: 0, months: new Set() },
+    };
+    const resource = values[payment.recurso];
+    resource.total += Number(payment.pagamento);
+    resource.months.add(`${payment.ano}-${String(payment.mes).padStart(2, "0")}`);
+    result.set(branch, values);
+  });
+
+  return Array.from(result.entries())
+    .map(([branch, values]) => ({
+      branch,
+      name: values.nome,
+      ENERGIA: values.ENERGIA.months.size
+        ? values.ENERGIA.total / values.ENERGIA.months.size
+        : 0,
+      AGUA: values.AGUA.months.size
+        ? values.AGUA.total / values.AGUA.months.size
+        : 0,
+      energyMonths: values.ENERGIA.months.size,
+      waterMonths: values.AGUA.months.size,
+    }))
+    .sort((a, b) => a.branch.localeCompare(b.branch));
 }
 
 function estimatePaidConsumption(payments, rates) {
@@ -679,6 +713,61 @@ function renderIncreaseTable(increases) {
       return row;
     }),
   );
+}
+
+function renderBranchAverageChart(payments) {
+  const container = document.querySelector("#branch-average-chart");
+  const branches = aggregateAveragePaymentsByBranch(payments);
+
+  if (!branches.length) {
+    container.innerHTML =
+      '<div class="empty-row">Nenhum pagamento encontrado para calcular as médias.</div>';
+    return;
+  }
+
+  const max = Math.max(
+    1,
+    ...branches.flatMap((branch) => [branch.ENERGIA, branch.AGUA]),
+  );
+
+  container.replaceChildren(
+    ...branches.map((branch) => {
+      const row = document.createElement("article");
+      row.className = "branch-average-row";
+      row.innerHTML = `
+        <div class="branch-average-label">
+          <strong>${escapeHtml(branch.branch)} · ${escapeHtml(branch.name)}</strong>
+          <span>Média das competências pagas</span>
+        </div>
+        <div class="branch-average-bars">
+          ${createBranchAverageBar(
+            branch.ENERGIA,
+            max,
+            false,
+            branch.energyMonths,
+          )}
+          ${createBranchAverageBar(branch.AGUA, max, true, branch.waterMonths)}
+        </div>
+      `;
+      return row;
+    }),
+  );
+}
+
+function createBranchAverageBar(value, max, water, monthCount) {
+  const width = value > 0 ? Math.max(1, (value / max) * 100) : 0;
+  return `
+    <div class="branch-average-bar">
+      <div class="branch-average-track" title="${
+        water ? "Água" : "Energia"
+      }: ${formatCurrency(value)} em ${monthCount} competência(s)">
+        <div class="branch-average-fill ${
+          water ? "branch-average-fill--water" : ""
+        }" style="width:${width}%"></div>
+      </div>
+      <span class="branch-average-value">${formatCurrency(value)}</span>
+    </div>
+  `;
 }
 
 function lastSixMonthKeys() {

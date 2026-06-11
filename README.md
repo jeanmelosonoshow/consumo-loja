@@ -266,6 +266,10 @@ A tendência também compara o consumo projetado com a média de até três mese
 recentes, destacando aumento em vermelho, redução em verde e estabilidade em
 cinza.
 
+Após a tabela de acompanhamento, o dashboard apresenta um gráfico de barras com
+a média mensal paga de energia e água por filial selecionada. A média considera
+somente as competências em que existe pagamento para o respectivo recurso.
+
 Quando há pagamento e consumo medido para a mesma competência mensal, o
 dashboard calcula a tarifa efetiva daquele mês:
 
