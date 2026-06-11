@@ -48,6 +48,14 @@ export default async function handler(request, response) {
         error.statusCode === 503
           ? error.message
           : "Não foi possível sincronizar o controle de consumo no Firebird.",
+      detalhe: cleanFirebirdError(error),
     });
   }
+}
+
+function cleanFirebirdError(error) {
+  return String(error?.message ?? "Erro não identificado.")
+    .split("\n")[0]
+    .replace(/password\s*=\s*[^,\s]+/gi, "password=***")
+    .slice(0, 300);
 }
