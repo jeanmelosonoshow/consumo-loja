@@ -517,6 +517,5 @@ function showMessage({ type = "info", title, message }) {
 }
 
 function normalizeBranchCode(value) {
-  const code = String(value ?? "").trim();
-  return /^\d$/.test(code) ? code.padStart(2, "0") : code;
+  return String(value ?? "").trim().toUpperCase();
 }

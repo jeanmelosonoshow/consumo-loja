@@ -85,10 +85,14 @@ export default async function handler(request, response) {
           return resolve();
         }
 
-        if (!result?.length || result[0].ID_FILIAL == null) {
+        const idfilial = normalizeBranchId(result?.[0]?.ID_FILIAL);
+
+        if (!result?.length || !idfilial) {
           response.status(401).json({
             autorizado: false,
-            message: "Usuário ou senha inválidos.",
+            message: result?.length
+              ? "O usuário não possui uma filial válida vinculada."
+              : "Usuário ou senha inválidos.",
           });
           return resolve();
         }
@@ -97,7 +101,7 @@ export default async function handler(request, response) {
           autorizado: true,
           idfuncionario: result[0].ID_FUNCIONARIO,
           nomefuncionario: result[0].NOME_FUNCIONARIO,
-          idfilial: normalizeBranchId(result[0].ID_FILIAL),
+          idfilial,
         });
         return resolve();
       });
@@ -110,5 +114,6 @@ function normalizeText(value) {
 }
 
 function normalizeBranchId(value) {
-  return String(value).trim().padStart(2, "0");
+  const code = String(value ?? "").trim().toUpperCase();
+  return /^[A-Z0-9]{2}$/.test(code) ? code : "";
 }

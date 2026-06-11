@@ -144,6 +144,17 @@ tabela `FUNCIONARIO`. A filial retornada pelo ERP é usada para carregar o
 formulário. As variáveis `DB_*_FB` precisam ser configuradas também no projeto
 Vercel do consumo-loja.
 
+O `IDFILIAL` é tratado como texto de exatamente dois caracteres e preserva
+códigos numéricos ou alfanuméricos, por exemplo:
+
+```text
+01
+05
+CD
+EN
+TE
+```
+
 ## Formulário de leituras
 
 Para cada contador cadastrado, o formulário apresenta:
