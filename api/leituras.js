@@ -1,4 +1,8 @@
 import { neon } from "@neondatabase/serverless";
+import {
+  findCompletedReadingDates,
+  syncCompletedDatesToFirebird,
+} from "../lib/controle-consumo.js";
 
 const CODIGO_FILIAL_VALIDO = /^[A-Za-z0-9._-]{1,30}$/;
 const DATA_VALIDA = /^\d{4}-\d{2}-\d{2}$/;
@@ -209,9 +213,32 @@ async function createReadings(request, response, sql) {
 
   const results = await sql.transaction(queries);
   const savedReadings = results.flat();
+  const requestedDates = [
+    ...new Set(readings.map((reading) => normalizeText(reading.DATA_LEITURA))),
+  ];
+  let synchronizationMessage = "";
+
+  try {
+    const completedDates = await findCompletedReadingDates(
+      sql,
+      filial,
+      requestedDates,
+    );
+    const synchronized = await syncCompletedDatesToFirebird(
+      filial,
+      completedDates,
+    );
+    synchronizationMessage = synchronized.length
+      ? ` ${synchronized.length} dia(s) completo(s) confirmado(s) no ERP.`
+      : "";
+  } catch (error) {
+    console.error("Leituras salvas, mas controle Firebird não sincronizado:", error);
+    synchronizationMessage =
+      " As leituras foram salvas, mas a confirmação no ERP está temporariamente pendente.";
+  }
 
   return response.status(201).json({
-    message: `${savedReadings.length} leitura(s) gravada(s) com sucesso.`,
+    message: `${savedReadings.length} leitura(s) gravada(s) com sucesso.${synchronizationMessage}`,
     readings: savedReadings,
   });
 }
