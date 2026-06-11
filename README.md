@@ -216,9 +216,9 @@ Ela combina pagamentos de energia e água consultados no Firebird com o consumo
 medido no Neon. A projeção mensal usa a média diária registrada e, quando
 possível, o custo efetivo histórico da própria filial.
 
-O dashboard deve ser incorporado com altura limitada pelo espaço disponível e
-rolagem interna. Ele não envia mensagens para alterar automaticamente a altura
-do `iframe`.
+O dashboard envia sua altura total pela mensagem
+`consumo-loja:dashboard-height`, permitindo que o Adianti expanda o iframe e
+mostre todos os dados sem rolagem interna. O formulário mantém rolagem interna.
 
 A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela

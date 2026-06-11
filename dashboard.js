@@ -70,8 +70,10 @@ async function initializeDashboard() {
       readingData.leituras ?? [],
       rateData.tarifas ?? [],
     );
+    initializeHeightReporting();
   } catch (error) {
     showError(error.message || "Não foi possível carregar o dashboard.");
+    initializeHeightReporting();
   }
 }
 
@@ -457,4 +459,21 @@ function escapeHtml(value) {
   const element = document.createElement("span");
   element.textContent = String(value ?? "");
   return element.innerHTML;
+}
+
+function initializeHeightReporting() {
+  const reportHeight = () => {
+    window.parent.postMessage(
+      {
+        type: "consumo-loja:dashboard-height",
+        height: document.documentElement.scrollHeight,
+      },
+      "*",
+    );
+  };
+
+  const observer = new ResizeObserver(reportHeight);
+  observer.observe(document.documentElement);
+  window.addEventListener("load", reportHeight);
+  reportHeight();
 }
