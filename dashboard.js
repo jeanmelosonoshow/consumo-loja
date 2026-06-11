@@ -54,7 +54,6 @@ async function initializeDashboard() {
     if (!readingResponse.ok) throw new Error(readingData.message);
 
     renderDashboard(paymentData, readingData.leituras ?? []);
-    initializeHeightReporting();
   } catch (error) {
     showError(error.message || "Não foi possível carregar o dashboard.");
   }
@@ -384,18 +383,4 @@ function escapeHtml(value) {
   const element = document.createElement("span");
   element.textContent = String(value ?? "");
   return element.innerHTML;
-}
-
-function initializeHeightReporting() {
-  const reportHeight = () => {
-    window.parent.postMessage(
-      {
-        type: "consumo-loja:dashboard-height",
-        height: document.documentElement.scrollHeight,
-      },
-      "*",
-    );
-  };
-  new ResizeObserver(reportHeight).observe(document.documentElement);
-  reportHeight();
 }

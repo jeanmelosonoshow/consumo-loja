@@ -216,6 +216,10 @@ Ela combina pagamentos de energia e água consultados no Firebird com o consumo
 medido no Neon. A projeção mensal usa a média diária registrada e, quando
 possível, o custo efetivo histórico da própria filial.
 
+O dashboard deve ser incorporado com altura limitada pelo espaço disponível e
+rolagem interna. Ele não envia mensagens para alterar automaticamente a altura
+do `iframe`.
+
 A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela
 de aumentos separa classificação do motivo, motivo informado e justificativa.
