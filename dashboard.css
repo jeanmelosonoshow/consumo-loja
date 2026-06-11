@@ -185,6 +185,12 @@ body {
 .projection-card span { color: var(--muted); font-size: .72rem; }
 .projection-card strong { margin-top: 7px; font-size: 1.1rem; }
 
+.projection-source {
+  margin-top: 7px;
+  font-size: .66rem !important;
+  line-height: 1.4;
+}
+
 .projection-comparison {
   margin-top: 14px;
   padding: 11px 12px;

@@ -53,13 +53,29 @@ async function initializeDashboard() {
     if (!paymentResponse.ok) throw new Error(paymentData.message);
     if (!readingResponse.ok) throw new Error(readingData.message);
 
-    renderDashboard(paymentData, readingData.leituras ?? []);
+    const branch = paymentData.filial ?? {};
+    const rateResponse = await fetch(
+      `/api/dashboard-tarifas?filial=${encodeURIComponent(
+        branchId,
+      )}&uf=${encodeURIComponent(branch.uf ?? "")}&cidade=${encodeURIComponent(
+        branch.cidade ?? "",
+      )}`,
+    );
+    const rateData = await rateResponse.json();
+
+    if (!rateResponse.ok) throw new Error(rateData.message);
+
+    renderDashboard(
+      paymentData,
+      readingData.leituras ?? [],
+      rateData.tarifas ?? [],
+    );
   } catch (error) {
     showError(error.message || "Não foi possível carregar o dashboard.");
   }
 }
 
-function renderDashboard(paymentData, readings) {
+function renderDashboard(paymentData, readings, rates) {
   const branch = paymentData.filial ?? {};
   document.querySelector("#branch-description").textContent = branch.nome
     ? `${branch.nome} · ${branch.cidade || ""}/${branch.uf || ""}`
@@ -67,10 +83,15 @@ function renderDashboard(paymentData, readings) {
 
   const monthlyConsumption = aggregateMonthlyConsumption(readings);
   const monthlyPayments = aggregateMonthlyPayments(paymentData.pagamentos ?? []);
+  const estimatedConsumption = estimatePaidConsumption(monthlyPayments, rates);
+  const displayedConsumption = mergeConsumption(
+    monthlyConsumption,
+    estimatedConsumption,
+  );
   const current = currentMonthKey();
-  const energyCurrent = monthlyConsumption.get(current)?.ENERGIA ?? 0;
-  const waterCurrent = monthlyConsumption.get(current)?.AGUA ?? 0;
-  const projections = calculateProjections(readings, monthlyPayments);
+  const energyCurrent = displayedConsumption.get(current)?.ENERGIA ?? 0;
+  const waterCurrent = displayedConsumption.get(current)?.AGUA ?? 0;
+  const projections = calculateProjections(readings, monthlyPayments, rates);
   const increases = readings
     .filter((reading) => Number(reading.VARIACAO_PERCENTUAL) > 0)
     .sort(
@@ -103,7 +124,7 @@ function renderDashboard(paymentData, readings) {
       : "Dados insuficientes para projeção",
   );
 
-  renderChart("#consumption-chart", monthlyConsumption, false);
+  renderChart("#consumption-chart", displayedConsumption, false);
   renderChart("#payment-chart", monthlyPayments, true);
   renderProjections(projections);
   renderIncreaseTable(increases);
@@ -139,7 +160,39 @@ function aggregateMonthlyPayments(payments) {
   return result;
 }
 
-function calculateProjections(readings, payments) {
+function estimatePaidConsumption(payments, rates) {
+  const result = new Map();
+
+  payments.forEach((values, month) => {
+    const estimated = { ENERGIA: 0, AGUA: 0 };
+    ["ENERGIA", "AGUA"].forEach((resource) => {
+      const rate = findRate(rates, resource);
+      const paid = values[resource] ?? 0;
+      if (rate?.valorUnitario > 0 && paid > 0) {
+        estimated[resource] = paid / rate.valorUnitario;
+      }
+    });
+    result.set(month, estimated);
+  });
+
+  return result;
+}
+
+function mergeConsumption(measured, estimated) {
+  const result = new Map(estimated);
+
+  measured.forEach((values, month) => {
+    const existing = result.get(month) ?? { ENERGIA: 0, AGUA: 0 };
+    result.set(month, {
+      ENERGIA: values.ENERGIA > 0 ? values.ENERGIA : existing.ENERGIA,
+      AGUA: values.AGUA > 0 ? values.AGUA : existing.AGUA,
+    });
+  });
+
+  return result;
+}
+
+function calculateProjections(readings, payments, rates) {
   const result = {};
   const now = new Date();
   const elapsedDays = now.getDate();
@@ -153,18 +206,7 @@ function calculateProjections(readings, payments) {
 
   ["ENERGIA", "AGUA"].forEach((resource) => {
     const currentConsumption = monthlyConsumption.get(currentKey)?.[resource] ?? 0;
-    if (currentConsumption <= 0 || elapsedDays <= 0) return;
-
-    const projectedConsumption =
-      (currentConsumption / elapsedDays) * daysInMonth;
-    const historicalRates = [];
     const paidMonths = [];
-
-    monthlyConsumption.forEach((consumption, month) => {
-      const consumed = consumption[resource] ?? 0;
-      const paid = payments.get(month)?.[resource] ?? 0;
-      if (consumed > 0 && paid > 0) historicalRates.push(paid / consumed);
-    });
 
     payments.forEach((values, month) => {
       const paid = values[resource] ?? 0;
@@ -172,21 +214,42 @@ function calculateProjections(readings, payments) {
     });
     paidMonths.sort((a, b) => a.month.localeCompare(b.month));
     const lastPaidMonth = paidMonths.at(-1) ?? null;
+    const rate = findRate(rates, resource);
+    let projectedConsumption =
+      currentConsumption > 0 && elapsedDays > 0
+        ? (currentConsumption / elapsedDays) * daysInMonth
+        : null;
 
-    const effectiveRate = historicalRates.length
-      ? historicalRates.reduce((sum, value) => sum + value, 0) /
-        historicalRates.length
-      : null;
+    if (projectedConsumption == null && rate?.valorUnitario > 0) {
+      const recentPaid = paidMonths.slice(-3);
+      projectedConsumption = recentPaid.length
+        ? recentPaid.reduce(
+            (sum, item) => sum + item.paid / rate.valorUnitario,
+            0,
+          ) / recentPaid.length
+        : null;
+    }
+
+    if (projectedConsumption == null) return;
 
     result[resource] = {
       consumption: projectedConsumption,
-      effectiveRate,
-      cost: effectiveRate ? projectedConsumption * effectiveRate : null,
+      rate,
+      cost:
+        rate?.valorUnitario > 0
+          ? projectedConsumption * rate.valorUnitario
+          : null,
       lastPaidMonth,
     };
   });
 
   return result;
+}
+
+function findRate(rates, resource) {
+  return rates.find(
+    (rate) => rate.recurso === resource && Number(rate.valorUnitario) > 0,
+  );
 }
 
 function renderChart(selector, data, currency) {
@@ -251,6 +314,17 @@ function renderProjections(projections) {
               ? "Custo: histórico insuficiente"
               : `Custo estimado: ${formatCurrency(data.cost)}`
           }</span>
+          ${
+            data.rate
+              ? `<span class="projection-source">Tarifa: ${formatCurrency(
+                  data.rate.valorUnitario,
+                )}/${data.rate.unidade.split("/").at(-1)} · ${
+                  data.rate.origem === "BANCO"
+                    ? "Cadastro interno"
+                    : "Fallback genérico externo"
+                }</span>`
+              : ""
+          }
           ${
             comparison
               ? `

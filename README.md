@@ -87,6 +87,12 @@ Para preparar justificativas no dashboard, execute:
 database/004_justificativa_leitura.sql
 ```
 
+Para cadastrar tarifas utilizadas nas projeções, execute:
+
+```text
+database/005_tarifa_referencia.sql
+```
+
 A tabela `leitura_contador` armazena:
 
 ```text
@@ -133,6 +139,7 @@ POST /api/leituras
 POST /api/login
 GET  /api/dashboard-pagamentos?filial={IDFILIAL_USR}
 GET  /api/dashboard-leituras?filial={IDFILIAL_USR}
+GET  /api/dashboard-tarifas?filial={IDFILIAL_USR}&uf={UF}&cidade={CIDADE}
 ```
 
 O parâmetro recebido via GET deve ser validado pela API antes de qualquer
@@ -216,6 +223,14 @@ do `iframe`.
 A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela
 de aumentos separa classificação do motivo, motivo informado e justificativa.
+
+Tarifas cadastradas na tabela `tarifa_referencia` têm prioridade. Quando não
+há uma tarifa válida, o dashboard usa um fallback genérico externo por UF. Sem
+histórico medido suficiente, estima o consumo faturado por:
+
+```text
+consumo estimado = valor pago / tarifa de referência
+```
 
 O dashboard classifica as contas do ERP por:
 
