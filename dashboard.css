@@ -208,6 +208,18 @@ body {
   font-size: .9rem;
 }
 
+.variation-badge {
+  width: fit-content;
+  margin: 8px 0 5px;
+  padding: 5px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: inherit !important;
+  font-size: .68rem !important;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
 .projection-comparison--higher {
   background: #fff1ed;
   color: #9a3d20;

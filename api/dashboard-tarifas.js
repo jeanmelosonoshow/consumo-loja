@@ -8,13 +8,17 @@ const INTERNET_FALLBACKS = {
   RJ: {
     ENERGIA: {
       concessionaria: "Média genérica RJ (Light / Enel Rio)",
-      valorUnitario: 1.2,
+      valorBase: 1.26,
+      fatorAjuste: 1.130422,
+      valorUnitario: 1.424332,
       unidade: "R$/kWh",
       dataInicio: "2026-01-01",
       fonteUrl: "https://www.gov.br/aneel/pt-br/assuntos/tarifas",
     },
     AGUA: {
       concessionaria: "Média genérica RJ (Águas do Rio / CEDAE)",
+      valorBase: 12,
+      fatorAjuste: 1,
       valorUnitario: 12,
       unidade: "R$/m³",
       dataInicio: "2026-01-01",
@@ -68,6 +72,8 @@ export default async function handler(request, response) {
         return {
           recurso: resource,
           concessionaria: databaseRate.CONCESSIONARIA,
+          valorBase: Number(databaseRate.VALOR_UNITARIO),
+          fatorAjuste: 1,
           valorUnitario: Number(databaseRate.VALOR_UNITARIO),
           unidade: databaseRate.UNIDADE,
           dataInicio: databaseRate.DATA_INICIO,

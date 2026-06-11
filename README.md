@@ -228,13 +228,31 @@ A tendência também compara o consumo projetado com a média de até três mese
 recentes, destacando aumento em vermelho, redução em verde e estabilidade em
 cinza.
 
-Tarifas cadastradas na tabela `tarifa_referencia` têm prioridade. Quando não
-há uma tarifa válida, o dashboard usa um fallback genérico externo por UF. Sem
-histórico medido suficiente, estima o consumo faturado por:
+Quando há pagamento e consumo medido para a mesma competência mensal, o
+dashboard calcula a tarifa efetiva daquele mês:
+
+```text
+tarifa efetiva = valor pago da competência / consumo medido da competência
+```
+
+A mediana das últimas competências completas tem prioridade nas projeções. Sem
+esse histórico, o dashboard utiliza a tarifa cadastrada e, por último, um
+fallback externo calibrado por UF. O fallback inicial de energia do RJ aplica
+o fator do exemplo real informado:
+
+```text
+R$ 10.127 / 7.110 kWh = R$ 1,424332/kWh
+```
+
+Sem histórico medido suficiente, estima o consumo faturado por:
 
 ```text
 consumo estimado = valor pago / tarifa de referência
 ```
+
+Nos cartões de tendência, a variação percentual entre a projeção e sua
+referência é destacada com sinal positivo ou negativo e a indicação de aumento
+ou redução.
 
 O dashboard classifica as contas do ERP por:
 

@@ -85,7 +85,15 @@ function renderDashboard(paymentData, readings, rates) {
 
   const monthlyConsumption = aggregateMonthlyConsumption(readings);
   const monthlyPayments = aggregateMonthlyPayments(paymentData.pagamentos ?? []);
-  const estimatedConsumption = estimatePaidConsumption(monthlyPayments, rates);
+  const calibratedRates = calibrateRatesByCompetence(
+    monthlyConsumption,
+    monthlyPayments,
+    rates,
+  );
+  const estimatedConsumption = estimatePaidConsumption(
+    monthlyPayments,
+    calibratedRates,
+  );
   const displayedConsumption = mergeConsumption(
     monthlyConsumption,
     estimatedConsumption,
@@ -93,7 +101,11 @@ function renderDashboard(paymentData, readings, rates) {
   const current = currentMonthKey();
   const energyCurrent = displayedConsumption.get(current)?.ENERGIA ?? 0;
   const waterCurrent = displayedConsumption.get(current)?.AGUA ?? 0;
-  const projections = calculateProjections(readings, monthlyPayments, rates);
+  const projections = calculateProjections(
+    readings,
+    monthlyPayments,
+    calibratedRates,
+  );
   const increases = readings
     .filter((reading) => Number(reading.VARIACAO_PERCENTUAL) > 0)
     .sort(
@@ -194,6 +206,40 @@ function mergeConsumption(measured, estimated) {
   return result;
 }
 
+function calibrateRatesByCompetence(consumption, payments, rates) {
+  const currentKey = currentMonthKey();
+
+  return ["ENERGIA", "AGUA"].map((resource) => {
+    const referenceRate = findRate(rates, resource);
+    const competenceRates = Array.from(payments.entries())
+      .filter(([month, values]) => {
+        const measured = consumption.get(month)?.[resource] ?? 0;
+        return month !== currentKey && values[resource] > 0 && measured > 0;
+      })
+      .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
+      .slice(-6)
+      .map(([month, values]) => ({
+        month,
+        value: values[resource] / consumption.get(month)[resource],
+      }))
+      .filter((item) => Number.isFinite(item.value) && item.value > 0);
+
+    if (!competenceRates.length) {
+      return referenceRate ?? { recurso: resource, origem: "INDISPONIVEL" };
+    }
+
+    return {
+      recurso: resource,
+      valorBase: referenceRate?.valorBase ?? referenceRate?.valorUnitario,
+      fatorAjuste: 1,
+      valorUnitario: median(competenceRates.map((item) => item.value)),
+      unidade: referenceRate?.unidade ?? `R$/${resource === "ENERGIA" ? "kWh" : "m³"}`,
+      origem: "HISTORICO_COMPETENCIA",
+      competencias: competenceRates.map((item) => item.month),
+    };
+  });
+}
+
 function calculateProjections(readings, payments, rates) {
   const result = {};
   const now = new Date();
@@ -274,6 +320,14 @@ function findRate(rates, resource) {
   );
 }
 
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 function renderChart(selector, data, currency) {
   const container = document.querySelector(selector);
   const months = lastSixMonthKeys();
@@ -349,9 +403,7 @@ function renderProjections(projections) {
               ? `<span class="projection-source">Tarifa: ${formatCurrency(
                   data.rate.valorUnitario,
                 )}/${data.rate.unidade.split("/").at(-1)} · ${
-                  data.rate.origem === "BANCO"
-                    ? "Cadastro interno"
-                    : "Fallback genérico externo"
+                  describeRateOrigin(data.rate)
                 }</span>`
               : ""
           }
@@ -361,6 +413,7 @@ function renderProjections(projections) {
                 <div class="projection-comparison projection-comparison--${consumptionComparison.direction}">
                   <span>Referência de consumo (${data.referenceMonthCount} mês(es) recente(s))</span>
                   <strong>${formatUnit(data.referenceConsumption, unit)}</strong>
+                  <span class="variation-badge">${consumptionComparison.badge}</span>
                   <span>${consumptionComparison.message}</span>
                 </div>
               `
@@ -372,6 +425,7 @@ function renderProjections(projections) {
                 <div class="projection-comparison projection-comparison--${comparison.direction}">
                   <span>Último mês pago (${formatMonth(data.lastPaidMonth.month)})</span>
                   <strong>${formatCurrency(data.lastPaidMonth.paid)}</strong>
+                  <span class="variation-badge">${comparison.badge}</span>
                   <span>${comparison.message}</span>
                 </div>
               `
@@ -395,13 +449,11 @@ function createConsumptionComparison(projectedConsumption, reference, unit) {
 
   return {
     direction,
+    badge: createVariationBadge(direction, percentage),
     message:
       direction === "equal"
         ? "Consumo projetado estável em relação à referência"
-        : `${direction === "higher" ? "Aumento" : "Redução"} de ${formatUnit(
-            Math.abs(difference),
-            unit,
-          )} (${formatNumber(percentage)}%)`,
+        : `Diferença de ${formatUnit(Math.abs(difference), unit)} entre os indicadores`,
   };
 }
 
@@ -410,22 +462,31 @@ function createCostComparison(projectedCost, lastPaidMonth) {
   const percentage =
     lastPaidMonth.paid > 0 ? (Math.abs(difference) / lastPaidMonth.paid) * 100 : 0;
   const direction = difference > 0 ? "higher" : difference < 0 ? "lower" : "equal";
-  const description =
-    direction === "higher"
-      ? "acima"
-      : direction === "lower"
-        ? "abaixo"
-        : "igual ao";
-
   return {
     direction,
+    badge: createVariationBadge(direction, percentage),
     message:
       direction === "equal"
         ? "Projeção igual ao último mês pago"
-        : `${formatCurrency(Math.abs(difference))} (${formatNumber(
-            percentage,
-          )}%) ${description} do último mês pago`,
+        : `Diferença de ${formatCurrency(Math.abs(difference))} entre os indicadores`,
   };
+}
+
+function createVariationBadge(direction, percentage) {
+  if (direction === "equal") return "0% · Estável";
+  return `${direction === "higher" ? "+" : "-"}${formatNumber(
+    percentage,
+  )}% · ${direction === "higher" ? "Aumento" : "Redução"}`;
+}
+
+function describeRateOrigin(rate) {
+  if (rate.origem === "HISTORICO_COMPETENCIA") {
+    return `Histórico real de ${rate.competencias.length} competência(s)`;
+  }
+  if (rate.origem === "BANCO") return "Cadastro interno";
+  return rate.fatorAjuste > 1
+    ? `Fallback calibrado (fator ${formatNumber(rate.fatorAjuste)})`
+    : "Fallback genérico externo";
 }
 
 function renderIncreaseTable(increases) {
