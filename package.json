@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check dashboard.js && node --check api/contadores.js && node --check api/leituras.js && node --check api/login.js && node --check lib/dashboard-access.js && node --check lib/controle-consumo.js && node --check api/sincronizar-controle.js && node --check api/dashboard-acessos.js && node --check api/dashboard-pagamentos.js && node --check api/dashboard-leituras.js && node --check api/dashboard-tarifas.js"
+    "check": "node --check app.js && node --check dashboard.js && node --check api/contadores.js && node --check api/leituras.js && node --check api/login.js && node --check lib/dashboard-access.js && node --check api/dashboard-acessos.js && node --check api/dashboard-pagamentos.js && node --check api/dashboard-leituras.js && node --check api/dashboard-tarifas.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",

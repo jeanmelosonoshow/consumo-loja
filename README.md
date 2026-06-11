@@ -142,7 +142,6 @@ A aplicação expõe:
 GET  /api/contadores?filial={IDFILIAL_USR}
 POST /api/contadores
 POST /api/leituras
-POST /api/sincronizar-controle
 POST /api/login
 GET  /api/dashboard-pagamentos?filial={IDFILIAL_USR}&funcionario={IDFUNCIONARIO}&filiais={LISTA}
 GET  /api/dashboard-leituras?filial={IDFILIAL_USR}&funcionario={IDFUNCIONARIO}&filiais={LISTA}
@@ -194,21 +193,6 @@ Data e valor são obrigatórios para todos os contadores. O envio é realizado e
 uma única transação: se uma leitura for inválida ou duplicada, nenhuma leitura
 do conjunto é gravada. A restrição única `(ID_CONTADOR, DATA_LEITURA)` impede
 mais de uma leitura para o mesmo contador na mesma data.
-
-Após salvar as leituras, a API verifica se todos os contadores ativos da filial
-possuem lançamento naquela data. Somente datas completas são inseridas na
-tabela Firebird `CONTROLE_LEITURA_CONSUMO`. O comando utiliza apenas `SELECT` e
-`INSERT`; a coluna de data de registro pode usar o valor padrão definido no
-Firebird.
-
-Para sincronizar lançamentos de teste já existentes no Neon:
-
-```http
-POST /api/sincronizar-controle
-Content-Type: application/json
-
-{"IDFILIAL_USR":"05"}
-```
 
 Motivo e observação permanecem opcionais quando não há aumento comparável. Se o
 consumo calculado da nova leitura for maior que o consumo anterior do contador,
