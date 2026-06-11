@@ -1,13 +1,19 @@
 const params = new URLSearchParams(window.location.search);
-const branchId =
+let branchId = normalizeBranchCode(
   params.get("$a_system_user_unit_code") ??
   params.get("a_system_user_unit_code") ??
   params.get("IDFILIAL_USR") ??
   params.get("idfilial_usr") ??
-  "";
-const branchLabel =
+  "",
+);
+let branchLabel =
   params.get("NOME_FILIAL") ?? params.get("nome_filial") ?? branchId;
 
+const LOGIN_STORAGE_KEY = "consumo-loja:usuario";
+const loginScreen = document.querySelector("#login-screen");
+const loginForm = document.querySelector("#login-form");
+const loginError = document.querySelector("#login-error");
+const logoutButton = document.querySelector("#logout-button");
 const dialog = document.querySelector("#meter-dialog");
 const meterForm = document.querySelector("#meter-form");
 const dialogTitle = document.querySelector("#dialog-title");
@@ -30,12 +36,7 @@ function initialize() {
       dateStyle: "long",
     }).format(new Date());
 
-  document.querySelector("#branch-name").textContent =
-    branchLabel || "Não identificada";
-  document.querySelector("#missing-branch").hidden = Boolean(branchId);
-
   document.querySelectorAll("[data-open-meter]").forEach((button) => {
-    button.disabled = !branchId;
     button.addEventListener("click", () => openMeterDialog(button.dataset.openMeter));
   });
 
@@ -48,9 +49,106 @@ function initialize() {
 
   meterForm.addEventListener("submit", saveMeter);
   readingsForm.addEventListener("submit", saveReadings);
+  loginForm.addEventListener("submit", authenticateUser);
+  logoutButton.addEventListener("click", logout);
   dialog.addEventListener("close", resetForm);
   initializeHeightReporting();
+  initializeAccess();
+}
+
+function initializeAccess() {
+  if (branchId) {
+    activateApp({ authenticatedByLogin: false });
+    return;
+  }
+
+  const savedUser = getSavedUser();
+
+  if (savedUser?.idfilial) {
+    branchId = normalizeBranchCode(savedUser.idfilial);
+    branchLabel = branchId;
+    activateApp({ authenticatedByLogin: true });
+    return;
+  }
+
+  showLogin();
+}
+
+function showLogin() {
+  loginScreen.hidden = false;
+  document.querySelectorAll(".app-content").forEach((element) => {
+    element.hidden = true;
+  });
+  document.querySelector("#login-user").focus();
+}
+
+function activateApp({ authenticatedByLogin }) {
+  loginScreen.hidden = true;
+  document.querySelectorAll(".app-content").forEach((element) => {
+    element.hidden = false;
+  });
+  document.querySelector("#branch-name").textContent = branchLabel;
+  document.querySelector("#missing-branch").hidden = true;
+  document.querySelectorAll("[data-open-meter]").forEach((button) => {
+    button.disabled = false;
+  });
+  logoutButton.hidden = !authenticatedByLogin;
   loadMeters();
+}
+
+async function authenticateUser(event) {
+  event.preventDefault();
+  loginError.hidden = true;
+
+  const formData = new FormData(loginForm);
+  const submitButton = loginForm.querySelector('[type="submit"]');
+
+  try {
+    setLoginButtonLoading(submitButton, true);
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        usuario: formData.get("usuario"),
+        senha: formData.get("senha"),
+      }),
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result.autorizado || !result.idfilial) {
+      throw new Error(result.message || "Usuário ou senha inválidos.");
+    }
+
+    sessionStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(result));
+    branchId = normalizeBranchCode(result.idfilial);
+    branchLabel = branchId;
+    loginForm.reset();
+    activateApp({ authenticatedByLogin: true });
+  } catch (error) {
+    loginError.textContent = error.message;
+    loginError.hidden = false;
+  } finally {
+    setLoginButtonLoading(submitButton, false);
+  }
+}
+
+function getSavedUser() {
+  try {
+    return JSON.parse(sessionStorage.getItem(LOGIN_STORAGE_KEY));
+  } catch {
+    sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+    return null;
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+  branchId = "";
+  branchLabel = "";
+  meters = [];
+  readingsForm.reset();
+  logoutButton.hidden = true;
+  showLogin();
 }
 
 function openMeterDialog(type) {
@@ -388,6 +486,11 @@ function setReadingsButtonLoading(button, loading) {
   button.textContent = loading ? "Enviando leituras..." : "Enviar todas as leituras";
 }
 
+function setLoginButtonLoading(button, loading) {
+  button.disabled = loading;
+  button.textContent = loading ? "Validando acesso..." : "Entrar";
+}
+
 function showMessage({ type = "info", title, message }) {
   const labels = {
     success: "Operação concluída",
@@ -411,4 +514,9 @@ function showMessage({ type = "info", title, message }) {
   if (!messageDialog.open) {
     messageDialog.showModal();
   }
+}
+
+function normalizeBranchCode(value) {
+  const code = String(value ?? "").trim();
+  return /^\d$/.test(code) ? code.padStart(2, "0") : code;
 }

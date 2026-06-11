@@ -54,6 +54,12 @@ button {
   gap: 12px;
 }
 
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .topbar__brand div,
 .branch-badge {
   display: flex;
@@ -93,6 +99,52 @@ button {
   width: min(1180px, calc(100% - 36px));
   margin: 0 auto;
   padding: 46px 0 80px;
+}
+
+.login-screen {
+  min-height: 100vh;
+  padding: 24px 16px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top left, rgb(23 107 85 / 13%), transparent 38%),
+    var(--background);
+}
+
+.login-screen[hidden] {
+  display: none;
+}
+
+.login-card {
+  width: min(100%, 430px);
+  padding: clamp(24px, 7vw, 38px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 20px 60px rgb(36 52 64 / 14%);
+}
+
+.login-card__mark {
+  margin-bottom: 24px;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 8vw, 2.5rem);
+  letter-spacing: -0.05em;
+}
+
+.login-card__description {
+  margin: 12px 0 26px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.login-card__button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 6px;
 }
 
 .intro {
@@ -619,6 +671,16 @@ button {
 
   .branch-badge {
     min-width: 0;
+  }
+
+  .topbar__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .topbar__actions .button {
+    min-height: 34px;
+    padding-block: 6px;
   }
 
   .page {

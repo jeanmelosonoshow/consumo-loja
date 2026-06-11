@@ -17,7 +17,47 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="topbar">
+    <section id="login-screen" class="login-screen" hidden>
+      <div class="login-card">
+        <span class="brand-mark login-card__mark" aria-hidden="true">CL</span>
+        <p class="eyebrow">Acesso ao formulário</p>
+        <h1>Identifique sua unidade</h1>
+        <p class="login-card__description">
+          Entre com seu usuário do ERP para acessar os contadores da sua filial.
+        </p>
+
+        <form id="login-form">
+          <div class="form-field">
+            <label for="login-user">Usuário</label>
+            <input
+              id="login-user"
+              name="usuario"
+              type="text"
+              autocomplete="username"
+              maxlength="80"
+              required
+            />
+          </div>
+          <div class="form-field">
+            <label for="login-password">Senha</label>
+            <input
+              id="login-password"
+              name="senha"
+              type="password"
+              autocomplete="current-password"
+              maxlength="120"
+              required
+            />
+          </div>
+          <p id="login-error" class="form-error" role="alert" hidden></p>
+          <button class="button button--primary login-card__button" type="submit">
+            Entrar
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <header class="topbar app-content" hidden>
       <div class="topbar__brand">
         <span class="brand-mark" aria-hidden="true">CL</span>
         <div>
@@ -25,13 +65,18 @@
           <span>Controle diário de recursos</span>
         </div>
       </div>
-      <div class="branch-badge">
-        <span>Filial</span>
-        <strong id="branch-name">Carregando...</strong>
+      <div class="topbar__actions">
+        <div class="branch-badge">
+          <span>Filial</span>
+          <strong id="branch-name">Carregando...</strong>
+        </div>
+        <button id="logout-button" class="button button--secondary" type="button" hidden>
+          Sair
+        </button>
       </div>
     </header>
 
-    <main class="page">
+    <main class="page app-content" hidden>
       <section class="intro">
         <div>
           <p class="eyebrow">Leitura diária</p>

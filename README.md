@@ -124,10 +124,25 @@ A aplicação expõe:
 GET  /api/contadores?filial={IDFILIAL_USR}
 POST /api/contadores
 POST /api/leituras
+POST /api/login
 ```
 
 O parâmetro recebido via GET deve ser validado pela API antes de qualquer
 consulta ou gravação. Ele não deve ser considerado autorização por si só.
+
+## Acesso híbrido
+
+O formulário possui dois modos de acesso:
+
+```text
+Com a_system_user_unit_code -> abre diretamente no modo Adianti
+Sem a_system_user_unit_code -> solicita login do ERP Firebird
+```
+
+No login alternativo, a API valida `LOGIN`, `SENHAWEB` e `STATUS = 'A'` na
+tabela `FUNCIONARIO`. A filial retornada pelo ERP é usada para carregar o
+formulário. As variáveis `DB_*_FB` precisam ser configuradas também no projeto
+Vercel do consumo-loja.
 
 ## Formulário de leituras
 
