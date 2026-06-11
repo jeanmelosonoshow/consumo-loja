@@ -78,7 +78,6 @@ function initialize() {
   loginForm.addEventListener("submit", authenticateUser);
   logoutButton.addEventListener("click", logout);
   dialog.addEventListener("close", resetForm);
-  initializeHeightReporting();
   initializeAccess();
 }
 
@@ -537,23 +536,6 @@ async function saveReadings(event) {
   } finally {
     setReadingsButtonLoading(submitButton, false);
   }
-}
-
-function initializeHeightReporting() {
-  const reportHeight = () => {
-    window.parent.postMessage(
-      {
-        type: "consumo-loja:height",
-        height: document.documentElement.scrollHeight,
-      },
-      "*",
-    );
-  };
-
-  const observer = new ResizeObserver(reportHeight);
-  observer.observe(document.documentElement);
-  window.addEventListener("load", reportHeight);
-  reportHeight();
 }
 
 function formatReading(value) {

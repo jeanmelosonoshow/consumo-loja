@@ -192,17 +192,10 @@ Eventos externos ou sazonais
 Problemas técnicos / estruturais
 ```
 
-## Altura automática no Adianti
+## Incorporação no Adianti
 
-O formulário envia sua altura ao contêiner pai pela mensagem:
-
-```text
-consumo-loja:height
-```
-
-O HTML que incorpora o formulário deve ouvir essa mensagem e atualizar a
-altura do `iframe`. Assim, a página principal controla a rolagem e o formulário
-não exibe uma barra de rolagem interna.
+O formulário e o dashboard devem ser incorporados com altura limitada pelo
+espaço disponível no Adianti e rolagem interna nos respectivos `iframes`.
 
 ## Dashboard
 
