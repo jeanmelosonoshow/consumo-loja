@@ -18,6 +18,17 @@ const REASON_LABELS = {
   FALHA_ELETRICA: "Falhas elétricas",
   MANUTENCAO_REPARO: "Manutenção / reparo",
 };
+const REASON_CATEGORIES = {
+  USO_EXCEDENTE: "Falhas humanas / operacionais",
+  ESQUECIMENTO: "Falhas humanas / operacionais",
+  DESVIO_PROCEDIMENTO: "Falhas humanas / operacionais",
+  FALHA_MEDICAO: "Falhas humanas / operacionais",
+  AUMENTO_ATIPICO_DEMANDA: "Eventos externos ou sazonais",
+  CONDICOES_CLIMATICAS: "Eventos externos ou sazonais",
+  VAZAMENTO_FALHA_HIDRAULICA: "Problemas técnicos / estruturais",
+  FALHA_ELETRICA: "Problemas técnicos / estruturais",
+  MANUTENCAO_REPARO: "Problemas técnicos / estruturais",
+};
 
 initializeDashboard();
 
@@ -148,12 +159,20 @@ function calculateProjections(readings, payments) {
     const projectedConsumption =
       (currentConsumption / elapsedDays) * daysInMonth;
     const historicalRates = [];
+    const paidMonths = [];
 
     monthlyConsumption.forEach((consumption, month) => {
       const consumed = consumption[resource] ?? 0;
       const paid = payments.get(month)?.[resource] ?? 0;
       if (consumed > 0 && paid > 0) historicalRates.push(paid / consumed);
     });
+
+    payments.forEach((values, month) => {
+      const paid = values[resource] ?? 0;
+      if (paid > 0) paidMonths.push({ month, paid });
+    });
+    paidMonths.sort((a, b) => a.month.localeCompare(b.month));
+    const lastPaidMonth = paidMonths.at(-1) ?? null;
 
     const effectiveRate = historicalRates.length
       ? historicalRates.reduce((sum, value) => sum + value, 0) /
@@ -164,6 +183,7 @@ function calculateProjections(readings, payments) {
       consumption: projectedConsumption,
       effectiveRate,
       cost: effectiveRate ? projectedConsumption * effectiveRate : null,
+      lastPaidMonth,
     };
   });
 
@@ -219,6 +239,10 @@ function renderProjections(projections) {
       const data = projections[key];
       const card = document.createElement("article");
       card.className = "projection-card";
+      const comparison =
+        data?.cost != null && data?.lastPaidMonth
+          ? createCostComparison(data.cost, data.lastPaidMonth)
+          : null;
       card.innerHTML = data
         ? `
           <span>${label} projetada</span>
@@ -228,6 +252,17 @@ function renderProjections(projections) {
               ? "Custo: histórico insuficiente"
               : `Custo estimado: ${formatCurrency(data.cost)}`
           }</span>
+          ${
+            comparison
+              ? `
+                <div class="projection-comparison projection-comparison--${comparison.direction}">
+                  <span>Último mês pago (${formatMonth(data.lastPaidMonth.month)})</span>
+                  <strong>${formatCurrency(data.lastPaidMonth.paid)}</strong>
+                  <span>${comparison.message}</span>
+                </div>
+              `
+              : ""
+          }
         `
         : `
           <span>${label} projetada</span>
@@ -238,12 +273,35 @@ function renderProjections(projections) {
   );
 }
 
+function createCostComparison(projectedCost, lastPaidMonth) {
+  const difference = projectedCost - lastPaidMonth.paid;
+  const percentage =
+    lastPaidMonth.paid > 0 ? (Math.abs(difference) / lastPaidMonth.paid) * 100 : 0;
+  const direction = difference > 0 ? "higher" : difference < 0 ? "lower" : "equal";
+  const description =
+    direction === "higher"
+      ? "acima"
+      : direction === "lower"
+        ? "abaixo"
+        : "igual ao";
+
+  return {
+    direction,
+    message:
+      direction === "equal"
+        ? "Projeção igual ao último mês pago"
+        : `${formatCurrency(Math.abs(difference))} (${formatNumber(
+            percentage,
+          )}%) ${description} do último mês pago`,
+  };
+}
+
 function renderIncreaseTable(increases) {
   const body = document.querySelector("#increase-table");
 
   if (!increases.length) {
     body.innerHTML =
-      '<tr><td class="empty-row" colspan="6">Nenhum aumento comparável encontrado.</td></tr>';
+      '<tr><td class="empty-row" colspan="8">Nenhum aumento comparável encontrado.</td></tr>';
     return;
   }
 
@@ -256,12 +314,9 @@ function renderIncreaseTable(increases) {
         <td>${escapeHtml(item.APELIDO_CONTADOR)}</td>
         <td>${formatNumber(item.CONSUMO)}</td>
         <td class="increase-badge">+${formatNumber(item.VARIACAO_PERCENTUAL)}%</td>
-        <td>${escapeHtml(
-          [REASON_LABELS[item.MOTIVO] ?? item.MOTIVO, item.OBSERVACAO]
-            .filter(Boolean)
-            .join(" · ") ||
-            "Não informada",
-        )}</td>
+        <td>${escapeHtml(REASON_CATEGORIES[item.MOTIVO] ?? "Não informada")}</td>
+        <td>${escapeHtml(REASON_LABELS[item.MOTIVO] ?? item.MOTIVO ?? "Não informado")}</td>
+        <td>${escapeHtml(item.OBSERVACAO ?? "Não informada")}</td>
       `;
       return row;
     }),

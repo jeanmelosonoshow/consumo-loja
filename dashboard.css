@@ -185,6 +185,33 @@ body {
 .projection-card span { color: var(--muted); font-size: .72rem; }
 .projection-card strong { margin-top: 7px; font-size: 1.1rem; }
 
+.projection-comparison {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: #f2f5f6;
+}
+
+.projection-comparison span,
+.projection-comparison strong {
+  display: block;
+}
+
+.projection-comparison strong {
+  margin: 3px 0;
+  font-size: .9rem;
+}
+
+.projection-comparison--higher {
+  background: #fff1ed;
+  color: #9a3d20;
+}
+
+.projection-comparison--lower {
+  background: #eaf7f1;
+  color: #176b55;
+}
+
 .projection-note {
   margin: 16px 0 0;
   color: var(--muted);
