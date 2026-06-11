@@ -60,10 +60,17 @@ async function listMeters(request, response, sql) {
       status AS "STATUS",
       data_cadastro AS "DATA_CADASTRO",
       ultima_leitura.leitura AS "ULTIMA_LEITURA",
-      ultima_leitura.data_leitura AS "DATA_ULTIMA_LEITURA"
+      ultima_leitura.data_leitura AS "DATA_ULTIMA_LEITURA",
+      ultima_leitura.consumo AS "ULTIMO_CONSUMO"
     FROM cadastro_contador AS contador
     LEFT JOIN LATERAL (
-      SELECT leitura, data_leitura
+      SELECT
+        leitura,
+        data_leitura,
+        CASE
+          WHEN leitura_anterior IS NULL THEN NULL
+          ELSE leitura - leitura_anterior
+        END AS consumo
       FROM leitura_contador
       WHERE id_contador = contador.id_contador
       ORDER BY data_leitura DESC

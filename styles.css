@@ -417,6 +417,25 @@ button {
   grid-column: 1 / -1;
 }
 
+.reading-rule--warning {
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: var(--energy-soft);
+  color: #8c5508;
+  font-weight: 600;
+}
+
+.reading-field--required label::after {
+  content: " *";
+  color: #b52d2d;
+}
+
+.reading-field--required select,
+.reading-field--required textarea {
+  border-color: #d19a43;
+  background: #fffdf7;
+}
+
 .reading-field label {
   margin-bottom: 6px;
   display: block;

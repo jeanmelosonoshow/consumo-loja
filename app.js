@@ -27,6 +27,32 @@ const messageDialogTitle = document.querySelector("#message-dialog-title");
 const messageDialogText = document.querySelector("#message-dialog-text");
 let selectedMeterType = null;
 let meters = [];
+const REASONS_BY_CATEGORY = [
+  {
+    label: "Falhas humanas / operacionais",
+    reasons: [
+      ["USO_EXCEDENTE", "Uso excedente"],
+      ["ESQUECIMENTO", "Esquecimento"],
+      ["DESVIO_PROCEDIMENTO", "Desvio de procedimento"],
+      ["FALHA_MEDICAO", "Falha na medição"],
+    ],
+  },
+  {
+    label: "Eventos externos ou sazonais",
+    reasons: [
+      ["AUMENTO_ATIPICO_DEMANDA", "Aumento atípico de demanda"],
+      ["CONDICOES_CLIMATICAS", "Condições climáticas"],
+    ],
+  },
+  {
+    label: "Problemas técnicos / estruturais",
+    reasons: [
+      ["VAZAMENTO_FALHA_HIDRAULICA", "Vazamentos ou falhas hidráulicas"],
+      ["FALHA_ELETRICA", "Falhas elétricas"],
+      ["MANUTENCAO_REPARO", "Manutenção / reparo"],
+    ],
+  },
+];
 
 initialize();
 
@@ -332,7 +358,8 @@ function createReadingFields(meter, type) {
         id="reason-${meter.ID_CONTADOR}"
         name="reason-${meter.ID_CONTADOR}"
       >
-        <option value="">Motivos serão carregados do cadastro</option>
+        <option value="">Selecione um motivo</option>
+        ${createReasonOptions()}
       </select>
     </div>
     <div class="reading-field reading-field--wide">
@@ -346,11 +373,69 @@ function createReadingFields(meter, type) {
       ></textarea>
     </div>
     <p class="reading-rule">
-      Motivo e observação serão obrigatórios quando a leitura ultrapassar o
-      percentual de aumento definido.
+      Motivo e observação serão obrigatórios quando o consumo for maior que o
+      consumo anterior comparável.
     </p>
   `;
+  const valueInput = fields.querySelector(`#value-${meter.ID_CONTADOR}`);
+  valueInput.addEventListener("input", () =>
+    updateJustificationRequirement(meter),
+  );
   return fields;
+}
+
+function createReasonOptions() {
+  return REASONS_BY_CATEGORY.map(
+    (category) => `
+      <optgroup label="${category.label}">
+        ${category.reasons
+          .map(
+            ([value, label]) =>
+              `<option value="${value}">${label}</option>`,
+          )
+          .join("")}
+      </optgroup>
+    `,
+  ).join("");
+}
+
+function updateJustificationRequirement(meter) {
+  const valueInput = document.querySelector(`#value-${meter.ID_CONTADOR}`);
+  const reason = document.querySelector(`#reason-${meter.ID_CONTADOR}`);
+  const observation = document.querySelector(
+    `#observation-${meter.ID_CONTADOR}`,
+  );
+  const rule = valueInput
+    .closest(".reading-fields")
+    .querySelector(".reading-rule");
+  const currentReading = Number(valueInput.value);
+  const lastReading = Number(meter.ULTIMA_LEITURA);
+  const previousConsumption = Number(meter.ULTIMO_CONSUMO);
+  const currentConsumption = currentReading - lastReading;
+  const requiresJustification =
+    valueInput.value !== "" &&
+    meter.ULTIMA_LEITURA != null &&
+    meter.ULTIMO_CONSUMO != null &&
+    currentConsumption > previousConsumption;
+
+  reason.required = requiresJustification;
+  observation.required = requiresJustification;
+  reason.closest(".reading-field").classList.toggle(
+    "reading-field--required",
+    requiresJustification,
+  );
+  observation.closest(".reading-field").classList.toggle(
+    "reading-field--required",
+    requiresJustification,
+  );
+  rule.classList.toggle("reading-rule--warning", requiresJustification);
+  rule.textContent = requiresJustification
+    ? `Aumento identificado: consumo atual ${formatReading(
+        currentConsumption,
+      )} ${meter.TIPO_CONTADOR === "ENERGIA" ? "kWh" : "m³"} contra ${formatReading(
+        previousConsumption,
+      )}. Informe motivo e observação.`
+    : "Motivo e observação são opcionais quando não há aumento comparável.";
 }
 
 function renderLoading() {

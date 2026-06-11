@@ -180,6 +180,18 @@ uma única transação: se uma leitura for inválida ou duplicada, nenhuma leitu
 do conjunto é gravada. A restrição única `(ID_CONTADOR, DATA_LEITURA)` impede
 mais de uma leitura para o mesmo contador na mesma data.
 
+Motivo e observação permanecem opcionais quando não há aumento comparável. Se o
+consumo calculado da nova leitura for maior que o consumo anterior do contador,
+ambos tornam-se obrigatórios no formulário e na API.
+
+Os motivos são organizados em:
+
+```text
+Falhas humanas / operacionais
+Eventos externos ou sazonais
+Problemas técnicos / estruturais
+```
+
 ## Altura automática no Adianti
 
 O formulário envia sua altura ao contêiner pai pela mensagem:

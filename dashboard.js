@@ -7,6 +7,17 @@ const branchId = String(
 )
   .trim()
   .toUpperCase();
+const REASON_LABELS = {
+  USO_EXCEDENTE: "Uso excedente",
+  ESQUECIMENTO: "Esquecimento",
+  DESVIO_PROCEDIMENTO: "Desvio de procedimento",
+  FALHA_MEDICAO: "Falha na medição",
+  AUMENTO_ATIPICO_DEMANDA: "Aumento atípico de demanda",
+  CONDICOES_CLIMATICAS: "Condições climáticas",
+  VAZAMENTO_FALHA_HIDRAULICA: "Vazamentos ou falhas hidráulicas",
+  FALHA_ELETRICA: "Falhas elétricas",
+  MANUTENCAO_REPARO: "Manutenção / reparo",
+};
 
 initializeDashboard();
 
@@ -246,7 +257,9 @@ function renderIncreaseTable(increases) {
         <td>${formatNumber(item.CONSUMO)}</td>
         <td class="increase-badge">+${formatNumber(item.VARIACAO_PERCENTUAL)}%</td>
         <td>${escapeHtml(
-          [item.MOTIVO, item.OBSERVACAO].filter(Boolean).join(" · ") ||
+          [REASON_LABELS[item.MOTIVO] ?? item.MOTIVO, item.OBSERVACAO]
+            .filter(Boolean)
+            .join(" · ") ||
             "Não informada",
         )}</td>
       `;

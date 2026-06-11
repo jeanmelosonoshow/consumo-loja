@@ -110,6 +110,42 @@ async function createReadings(request, response, sql) {
     justificationColumns.some((column) => column.column_name === "motivo") &&
     justificationColumns.some((column) => column.column_name === "observacao");
 
+  if (canSaveJustification) {
+    for (const reading of readings) {
+      const [comparison] = await sql`
+        SELECT
+          leitura AS ultima_leitura,
+          CASE
+            WHEN leitura_anterior IS NULL THEN NULL
+            ELSE leitura - leitura_anterior
+          END AS ultimo_consumo
+        FROM leitura_contador
+        WHERE id_contador = ${String(reading.ID_CONTADOR)}
+          AND data_leitura < ${normalizeText(reading.DATA_LEITURA)}
+        ORDER BY data_leitura DESC
+        LIMIT 1
+      `;
+      const newValue = Number(reading.LEITURA);
+      const reason = normalizeOptionalText(reading.MOTIVO, 120);
+      const observation = normalizeOptionalText(reading.OBSERVACAO, 500);
+      const currentConsumption =
+        comparison?.ultima_leitura == null
+          ? null
+          : newValue - Number(comparison.ultima_leitura);
+      const requiresJustification =
+        currentConsumption != null &&
+        comparison?.ultimo_consumo != null &&
+        currentConsumption > Number(comparison.ultimo_consumo);
+
+      if (requiresJustification && (!reason || !observation)) {
+        return response.status(422).json({
+          message:
+            "Foi identificado aumento de consumo. Informe motivo e observação para todos os contadores com aumento.",
+        });
+      }
+    }
+  }
+
   const queries = readings.map((reading) => {
     const meterId = String(reading.ID_CONTADOR);
     const date = normalizeText(reading.DATA_LEITURA);
