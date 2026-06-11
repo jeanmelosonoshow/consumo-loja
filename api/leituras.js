@@ -207,11 +207,55 @@ async function createReadings(request, response, sql) {
     `;
   });
 
+  const requestedDates = [
+    ...new Set(readings.map((reading) => normalizeText(reading.DATA_LEITURA))),
+  ];
+  const [syncTable] = await sql`
+    SELECT to_regclass('public.sincronizacao_firebird') IS NOT NULL AS existe
+  `;
+  if (syncTable?.existe) {
+    queries.push(sql`
+      INSERT INTO sincronizacao_firebird (
+        idfilial_usr,
+        data_leitura
+      )
+      SELECT
+        l.idfilial_usr,
+        l.data_leitura
+      FROM leitura_contador l
+      JOIN cadastro_contador c
+        ON c.id_contador = l.id_contador
+      WHERE l.idfilial_usr = ${filial}
+        AND c.status = 'T'
+        AND l.data_leitura = ANY(${requestedDates}::date[])
+      GROUP BY
+        l.idfilial_usr,
+        l.data_leitura
+      HAVING COUNT(DISTINCT l.id_contador) = (
+        SELECT COUNT(*)
+        FROM cadastro_contador ca
+        WHERE ca.idfilial_usr = l.idfilial_usr
+          AND ca.status = 'T'
+      )
+      ON CONFLICT (idfilial_usr, data_leitura) DO NOTHING
+      RETURNING id_sincronizacao AS "ID_SINCRONIZACAO"
+    `);
+  }
+
   const results = await sql.transaction(queries);
-  const savedReadings = results.flat();
+  const savedReadings = results.slice(0, readings.length).flat();
+  const createdSynchronizations = syncTable?.existe
+    ? results.at(-1)?.length ?? 0
+    : null;
 
   return response.status(201).json({
-    message: `${savedReadings.length} leitura(s) gravada(s) com sucesso.`,
+    message: `${savedReadings.length} leitura(s) gravada(s) com sucesso. ${
+      createdSynchronizations === null
+        ? "O controle de sincronização ainda não está habilitado."
+        : createdSynchronizations
+        ? "Dia completo preparado para sincronização."
+        : "Nenhuma nova sincronização pendente foi necessária."
+    }`,
     readings: savedReadings,
   });
 }

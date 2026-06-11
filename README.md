@@ -99,6 +99,13 @@ Para impedir novas leituras com casas decimais diretamente no banco, execute:
 database/006_leitura_inteira.sql
 ```
 
+Para controlar os dias completos que aguardam sincronização com o Firebird,
+execute:
+
+```text
+database/007_sincronizacao_firebird.sql
+```
+
 A tabela `leitura_contador` armazena:
 
 ```text
@@ -193,6 +200,11 @@ Data e valor são obrigatórios para todos os contadores. O envio é realizado e
 uma única transação: se uma leitura for inválida ou duplicada, nenhuma leitura
 do conjunto é gravada. A restrição única `(ID_CONTADOR, DATA_LEITURA)` impede
 mais de uma leitura para o mesmo contador na mesma data.
+
+Na mesma transação do envio, a API cria um registro `PENDENTE` em
+`sincronizacao_firebird` para cada data enviada que possuir leitura de todos os
+contadores ativos da filial. A restrição única por filial e data impede
+pendências duplicadas.
 
 Motivo e observação permanecem opcionais quando não há aumento comparável. Se o
 consumo calculado da nova leitura for maior que o consumo anterior do contador,
