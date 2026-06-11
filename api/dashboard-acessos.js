@@ -1,4 +1,4 @@
-import { getDashboardAccess } from "./_dashboard-access.js";
+import { getDashboardAccess } from "../lib/dashboard-access.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {

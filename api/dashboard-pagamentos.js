@@ -2,7 +2,7 @@ import {
   getDashboardAccess,
   queryFirebird,
   selectAuthorizedBranches,
-} from "./_dashboard-access.js";
+} from "../lib/dashboard-access.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {
