@@ -254,6 +254,10 @@ são o supervisor. As demais categorias, códigos ausentes ou inválidos
 permanecem limitados à filial recebida do Adianti. Pagamentos e leituras
 validam novamente essa autorização na API antes de retornar múltiplas filiais.
 
+Quando `a_system_user_custom_code` estiver vazio ou não for substituído pelo
+Adianti, nenhuma consulta multifilial será liberada. Nesse caso, o dashboard
+utiliza exclusivamente `a_system_user_unit_code`.
+
 A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela
 de aumentos separa classificação do motivo, motivo informado e justificativa.
