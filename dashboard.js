@@ -205,6 +205,11 @@ function calculateProjections(readings, payments, rates) {
   ).getDate();
   const currentKey = currentMonthKey();
   const monthlyConsumption = aggregateMonthlyConsumption(readings);
+  const estimatedConsumption = estimatePaidConsumption(payments, rates);
+  const comparableConsumption = mergeConsumption(
+    monthlyConsumption,
+    estimatedConsumption,
+  );
 
   ["ENERGIA", "AGUA"].forEach((resource) => {
     const currentConsumption = monthlyConsumption.get(currentKey)?.[resource] ?? 0;
@@ -217,6 +222,19 @@ function calculateProjections(readings, payments, rates) {
     paidMonths.sort((a, b) => a.month.localeCompare(b.month));
     const lastPaidMonth = paidMonths.at(-1) ?? null;
     const rate = findRate(rates, resource);
+    const referenceMonths = Array.from(comparableConsumption.entries())
+      .filter(
+        ([month, values]) =>
+          month !== currentKey && Number(values[resource] ?? 0) > 0,
+      )
+      .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
+      .slice(-3);
+    const referenceConsumption = referenceMonths.length
+      ? referenceMonths.reduce(
+          (sum, [, values]) => sum + Number(values[resource]),
+          0,
+        ) / referenceMonths.length
+      : null;
     let projectedConsumption =
       currentConsumption > 0 && elapsedDays > 0
         ? (currentConsumption / elapsedDays) * daysInMonth
@@ -242,6 +260,8 @@ function calculateProjections(readings, payments, rates) {
           ? projectedConsumption * rate.valorUnitario
           : null,
       lastPaidMonth,
+      referenceConsumption,
+      referenceMonthCount: referenceMonths.length,
     };
   });
 
@@ -307,6 +327,14 @@ function renderProjections(projections) {
         data?.cost != null && data?.lastPaidMonth
           ? createCostComparison(data.cost, data.lastPaidMonth)
           : null;
+      const consumptionComparison =
+        data?.referenceConsumption != null
+          ? createConsumptionComparison(
+              data.consumption,
+              data.referenceConsumption,
+              unit,
+            )
+          : null;
       card.innerHTML = data
         ? `
           <span>${label} projetada</span>
@@ -328,6 +356,17 @@ function renderProjections(projections) {
               : ""
           }
           ${
+            consumptionComparison
+              ? `
+                <div class="projection-comparison projection-comparison--${consumptionComparison.direction}">
+                  <span>Referência de consumo (${data.referenceMonthCount} mês(es) recente(s))</span>
+                  <strong>${formatUnit(data.referenceConsumption, unit)}</strong>
+                  <span>${consumptionComparison.message}</span>
+                </div>
+              `
+              : ""
+          }
+          ${
             comparison
               ? `
                 <div class="projection-comparison projection-comparison--${comparison.direction}">
@@ -346,6 +385,24 @@ function renderProjections(projections) {
       return card;
     }),
   );
+}
+
+function createConsumptionComparison(projectedConsumption, reference, unit) {
+  const difference = projectedConsumption - reference;
+  const percentage =
+    reference > 0 ? (Math.abs(difference) / reference) * 100 : 0;
+  const direction = difference > 0 ? "higher" : difference < 0 ? "lower" : "equal";
+
+  return {
+    direction,
+    message:
+      direction === "equal"
+        ? "Consumo projetado estável em relação à referência"
+        : `${direction === "higher" ? "Aumento" : "Redução"} de ${formatUnit(
+            Math.abs(difference),
+            unit,
+          )} (${formatNumber(percentage)}%)`,
+  };
 }
 
 function createCostComparison(projectedCost, lastPaidMonth) {

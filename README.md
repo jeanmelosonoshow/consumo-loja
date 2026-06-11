@@ -224,6 +224,10 @@ A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela
 de aumentos separa classificação do motivo, motivo informado e justificativa.
 
+A tendência também compara o consumo projetado com a média de até três meses
+recentes, destacando aumento em vermelho, redução em verde e estabilidade em
+cinza.
+
 Tarifas cadastradas na tabela `tarifa_referencia` têm prioridade. Quando não
 há uma tarifa válida, o dashboard usa um fallback genérico externo por UF. Sem
 histórico medido suficiente, estima o consumo faturado por:

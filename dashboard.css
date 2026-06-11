@@ -218,6 +218,11 @@ body {
   color: #176b55;
 }
 
+.projection-comparison--equal {
+  background: #eef3f5;
+  color: #52616b;
+}
+
 .projection-note {
   margin: 16px 0 0;
   color: var(--muted);
