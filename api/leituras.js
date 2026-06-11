@@ -99,10 +99,53 @@ async function createReadings(request, response, sql) {
     }
   }
 
+  const justificationColumns = await sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'leitura_contador'
+      AND column_name IN ('motivo', 'observacao')
+  `;
+  const canSaveJustification =
+    justificationColumns.some((column) => column.column_name === "motivo") &&
+    justificationColumns.some((column) => column.column_name === "observacao");
+
   const queries = readings.map((reading) => {
     const meterId = String(reading.ID_CONTADOR);
     const date = normalizeText(reading.DATA_LEITURA);
     const value = Number(reading.LEITURA);
+    const reason = normalizeOptionalText(reading.MOTIVO, 120);
+    const observation = normalizeOptionalText(reading.OBSERVACAO, 500);
+
+    if (canSaveJustification) {
+      return sql`
+        INSERT INTO leitura_contador (
+          idfilial_usr,
+          id_contador,
+          data_leitura,
+          leitura,
+          motivo,
+          observacao
+        )
+        VALUES (
+          ${filial},
+          ${meterId},
+          ${date},
+          ${value},
+          ${reason},
+          ${observation}
+        )
+        RETURNING
+          id_leitura AS "ID_LEITURA",
+          id_contador AS "ID_CONTADOR",
+          data_leitura AS "DATA_LEITURA",
+          leitura AS "LEITURA",
+          leitura_anterior AS "LEITURA_ANTERIOR",
+          motivo AS "MOTIVO",
+          observacao AS "OBSERVACAO",
+          data_registro AS "DATA_REGISTRO"
+      `;
+    }
 
     return sql`
       INSERT INTO leitura_contador (
@@ -133,6 +176,11 @@ async function createReadings(request, response, sql) {
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeOptionalText(value, maxLength) {
+  const normalized = normalizeText(value);
+  return normalized ? normalized.slice(0, maxLength) : null;
 }
 
 function cleanDatabaseMessage(message) {

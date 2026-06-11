@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Dashboard de consumo de energia e água por filial."
+    />
+    <title>Dashboard de consumo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <header class="dash-topbar">
+      <div>
+        <p class="eyebrow">Gestão de recursos</p>
+        <h1>Consumo da filial</h1>
+        <p id="branch-description">Carregando identificação...</p>
+      </div>
+      <div class="branch-code">
+        <span>Filial</span>
+        <strong id="branch-code">--</strong>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section id="dashboard-error" class="error-card" hidden></section>
+
+      <section class="metric-grid">
+        <article class="metric-card metric-card--energy">
+          <span>Consumo de energia no mês</span>
+          <strong id="energy-month">--</strong>
+          <small id="energy-projection">Projeção indisponível</small>
+        </article>
+        <article class="metric-card metric-card--water">
+          <span>Consumo de água no mês</span>
+          <strong id="water-month">--</strong>
+          <small id="water-projection">Projeção indisponível</small>
+        </article>
+        <article class="metric-card">
+          <span>Pagamentos nos 6 meses</span>
+          <strong id="paid-total">--</strong>
+          <small>Energia e água no ERP</small>
+        </article>
+        <article class="metric-card">
+          <span>Dias com aumento</span>
+          <strong id="increase-days">--</strong>
+          <small>Comparação com consumo anterior</small>
+        </article>
+      </section>
+
+      <section class="chart-grid">
+        <article class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="eyebrow">Medição</p>
+              <h2>Consumo mensal</h2>
+            </div>
+            <span class="panel__hint">Últimos 6 meses</span>
+          </div>
+          <div id="consumption-chart" class="bar-chart"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="eyebrow">Financeiro</p>
+              <h2>Valor pago</h2>
+            </div>
+            <span class="panel__hint">Dados do ERP</span>
+          </div>
+          <div id="payment-chart" class="bar-chart"></div>
+        </article>
+      </section>
+
+      <section class="panel projection-panel">
+        <div class="panel__header">
+          <div>
+            <p class="eyebrow">Tendência</p>
+            <h2>Projeção do mês</h2>
+          </div>
+          <span class="panel__hint">Baseada na média diária registrada</span>
+        </div>
+        <div id="projection-content" class="projection-grid"></div>
+        <p class="projection-note">
+          A projeção financeira utiliza o custo efetivo histórico quando há
+          pagamentos e consumo medido compatíveis. Cidade e UF, isoladamente,
+          não determinam a tarifa final de água ou energia.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <div>
+            <p class="eyebrow">Acompanhamento</p>
+            <h2>Dias com aumento de consumo</h2>
+          </div>
+          <span class="panel__hint">Maiores aumentos primeiro</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Recurso</th>
+                <th>Contador</th>
+                <th>Consumo</th>
+                <th>Aumento</th>
+                <th>Justificativa</th>
+              </tr>
+            </thead>
+            <tbody id="increase-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>

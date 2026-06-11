@@ -81,6 +81,12 @@ Para criar o histórico de leituras, execute:
 database/003_leitura_contador.sql
 ```
 
+Para preparar justificativas no dashboard, execute:
+
+```text
+database/004_justificativa_leitura.sql
+```
+
 A tabela `leitura_contador` armazena:
 
 ```text
@@ -125,6 +131,8 @@ GET  /api/contadores?filial={IDFILIAL_USR}
 POST /api/contadores
 POST /api/leituras
 POST /api/login
+GET  /api/dashboard-pagamentos?filial={IDFILIAL_USR}
+GET  /api/dashboard-leituras?filial={IDFILIAL_USR}
 ```
 
 O parâmetro recebido via GET deve ser validado pela API antes de qualquer
@@ -183,3 +191,15 @@ consumo-loja:height
 O HTML que incorpora o formulário deve ouvir essa mensagem e atualizar a
 altura do `iframe`. Assim, a página principal controla a rolagem e o formulário
 não exibe uma barra de rolagem interna.
+
+## Dashboard
+
+A página secundária `dashboard.html` é destinada ao Adianti:
+
+```text
+dashboard.html?a_system_user_unit_code={$a_system_user_unit_code}
+```
+
+Ela combina pagamentos de energia e água consultados no Firebird com o consumo
+medido no Neon. A projeção mensal usa a média diária registrada e, quando
+possível, o custo efetivo histórico da própria filial.

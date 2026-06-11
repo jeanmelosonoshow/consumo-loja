@@ -417,6 +417,8 @@ async function saveReadings(event) {
     ID_CONTADOR: meter.ID_CONTADOR,
     DATA_LEITURA: document.querySelector(`#date-${meter.ID_CONTADOR}`).value,
     LEITURA: document.querySelector(`#value-${meter.ID_CONTADOR}`).value,
+    MOTIVO: document.querySelector(`#reason-${meter.ID_CONTADOR}`).value,
+    OBSERVACAO: document.querySelector(`#observation-${meter.ID_CONTADOR}`).value,
   }));
 
   try {
