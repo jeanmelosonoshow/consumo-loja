@@ -150,9 +150,7 @@ async function createReadings(request, response, sql) {
         currentConsumption != null && previousConsumption > 0
           ? ((currentConsumption - previousConsumption) / previousConsumption) *
             100
-          : previousConsumption === 0 && currentConsumption > 0
-            ? Infinity
-            : null;
+          : null;
       const requiresJustification =
         increasePercentage != null && increasePercentage > increaseLimit;
 

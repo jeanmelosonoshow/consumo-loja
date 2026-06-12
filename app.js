@@ -416,9 +416,7 @@ function updateJustificationRequirement(meter) {
   const increasePercentage =
     previousConsumption > 0
       ? ((currentConsumption - previousConsumption) / previousConsumption) * 100
-      : previousConsumption === 0 && currentConsumption > 0
-        ? Infinity
-        : null;
+      : null;
   const requiresJustification =
     valueInput.value !== "" &&
     meter.ULTIMA_LEITURA != null &&
@@ -442,11 +440,9 @@ function updateJustificationRequirement(meter) {
         currentConsumption,
       )} ${meter.TIPO_CONTADOR === "ENERGIA" ? "kWh" : "m³"} contra ${formatReading(
         previousConsumption,
-      )}, ${
-        Number.isFinite(increasePercentage)
-          ? `aumento de ${formatPercentage(increasePercentage)}%`
-          : "aumento sem base percentual anterior"
-      }. Informe motivo e observação.`
+      )}, aumento de ${formatPercentage(
+        increasePercentage,
+      )}%. Informe motivo e observação.`
     : `Motivo e observação são opcionais quando o aumento não ultrapassa ${increaseLimit}%.`;
 }
 

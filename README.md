@@ -215,6 +215,9 @@ Energia elétrica -> 8%
 Água              -> 5%
 ```
 
+Quando não existir consumo anterior positivo, não há base percentual comparável
+e motivo/observação permanecem opcionais.
+
 Os motivos são organizados em:
 
 ```text
