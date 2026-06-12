@@ -50,15 +50,6 @@ export default async function handler(request, response) {
         JOIN cadastro_contador c ON c.id_contador = l.id_contador
         WHERE l.idfilial_usr = ANY(${branches}::text[])
           AND l.data_leitura >= CURRENT_DATE - INTERVAL '7 months'
-      ),
-      comparados AS (
-        SELECT
-          *,
-          LAG(consumo) OVER (
-            PARTITION BY id_contador
-            ORDER BY data_leitura
-          ) AS consumo_anterior
-        FROM consumos
       )
       SELECT
         id_leitura AS "ID_LEITURA",
@@ -70,14 +61,14 @@ export default async function handler(request, response) {
         leitura AS "LEITURA",
         leitura_anterior AS "LEITURA_ANTERIOR",
         consumo AS "CONSUMO",
-        consumo_anterior AS "CONSUMO_ANTERIOR",
+        NULL::numeric AS "CONSUMO_ANTERIOR",
         motivo AS "MOTIVO",
         observacao AS "OBSERVACAO",
         CASE
-          WHEN consumo_anterior IS NULL OR consumo_anterior = 0 THEN NULL
-          ELSE ROUND(((consumo - consumo_anterior) / consumo_anterior) * 100, 2)
+          WHEN leitura_anterior IS NULL OR leitura_anterior = 0 THEN NULL
+          ELSE ROUND(((leitura - leitura_anterior) / leitura_anterior) * 100, 2)
         END AS "VARIACAO_PERCENTUAL"
-      FROM comparados
+      FROM consumos
       ORDER BY data_leitura, tipo_contador, apelido_contador
     `;
 

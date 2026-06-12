@@ -410,17 +410,14 @@ function updateJustificationRequirement(meter) {
     .querySelector(".reading-rule");
   const currentReading = Number(valueInput.value);
   const lastReading = Number(meter.ULTIMA_LEITURA);
-  const previousConsumption = Number(meter.ULTIMO_CONSUMO);
-  const currentConsumption = currentReading - lastReading;
   const increaseLimit = meter.TIPO_CONTADOR === "ENERGIA" ? 8 : 5;
   const increasePercentage =
-    previousConsumption > 0
-      ? ((currentConsumption - previousConsumption) / previousConsumption) * 100
+    meter.ULTIMA_LEITURA != null && lastReading > 0
+      ? ((currentReading - lastReading) / lastReading) * 100
       : null;
   const requiresJustification =
     valueInput.value !== "" &&
     meter.ULTIMA_LEITURA != null &&
-    meter.ULTIMO_CONSUMO != null &&
     increasePercentage != null &&
     increasePercentage > increaseLimit;
 
@@ -436,10 +433,10 @@ function updateJustificationRequirement(meter) {
   );
   rule.classList.toggle("reading-rule--warning", requiresJustification);
   rule.textContent = requiresJustification
-    ? `Aumento identificado: consumo atual ${formatReading(
-        currentConsumption,
-      )} ${meter.TIPO_CONTADOR === "ENERGIA" ? "kWh" : "m³"} contra ${formatReading(
-        previousConsumption,
+    ? `Aumento identificado: leitura atual ${formatReading(
+        currentReading,
+      )} contra leitura anterior ${formatReading(
+        lastReading,
       )}, aumento de ${formatPercentage(
         increasePercentage,
       )}%. Informe motivo e observação.`

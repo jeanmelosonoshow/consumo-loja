@@ -291,7 +291,10 @@ function renderDashboard(paymentData, readings, rates) {
     calibratedRates,
   );
   const increases = readings
-    .filter((reading) => Number(reading.VARIACAO_PERCENTUAL) > 0)
+    .filter((reading) => {
+      const limit = reading.TIPO_CONTADOR === "ENERGIA" ? 8 : 5;
+      return Number(reading.VARIACAO_PERCENTUAL) > limit;
+    })
     .sort(
       (a, b) =>
         Number(b.VARIACAO_PERCENTUAL) - Number(a.VARIACAO_PERCENTUAL),

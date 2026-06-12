@@ -207,8 +207,15 @@ contadores ativos da filial. A restrição única por filial e data impede
 pendências duplicadas.
 
 Motivo e observação permanecem opcionais enquanto o aumento calculado não
-ultrapassar o limite do recurso. Ambos tornam-se obrigatórios no formulário e
-na API quando o consumo aumentar mais de:
+ultrapassar o limite do recurso. O percentual compara a leitura acumulada atual
+com a leitura acumulada imediatamente anterior:
+
+```text
+variação = (leitura atual - leitura anterior) / leitura anterior × 100
+```
+
+Ambos tornam-se obrigatórios no formulário e na API quando a leitura aumentar
+mais de:
 
 ```text
 Energia elétrica -> 8%
@@ -217,6 +224,9 @@ Energia elétrica -> 8%
 
 Quando não existir consumo anterior positivo, não há base percentual comparável
 e motivo/observação permanecem opcionais.
+
+A tabela de acompanhamento do dashboard exibe somente leituras cuja variação
+ultrapasse o limite definido para o respectivo recurso.
 
 Os motivos são organizados em:
 

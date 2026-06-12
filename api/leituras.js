@@ -125,11 +125,7 @@ async function createReadings(request, response, sql) {
     for (const reading of readings) {
       const [comparison] = await sql`
         SELECT
-          leitura AS ultima_leitura,
-          CASE
-            WHEN leitura_anterior IS NULL THEN NULL
-            ELSE leitura - leitura_anterior
-          END AS ultimo_consumo
+          leitura AS ultima_leitura
         FROM leitura_contador
         WHERE id_contador = ${String(reading.ID_CONTADOR)}
           AND data_leitura < ${normalizeText(reading.DATA_LEITURA)}
@@ -139,17 +135,12 @@ async function createReadings(request, response, sql) {
       const newValue = Number(reading.LEITURA);
       const reason = normalizeOptionalText(reading.MOTIVO, 120);
       const observation = normalizeOptionalText(reading.OBSERVACAO, 500);
-      const currentConsumption =
-        comparison?.ultima_leitura == null
-          ? null
-          : newValue - Number(comparison.ultima_leitura);
-      const previousConsumption = Number(comparison?.ultimo_consumo);
+      const previousReading = Number(comparison?.ultima_leitura);
       const resource = meterTypes.get(String(reading.ID_CONTADOR));
       const increaseLimit = resource === "ENERGIA" ? 8 : 5;
       const increasePercentage =
-        currentConsumption != null && previousConsumption > 0
-          ? ((currentConsumption - previousConsumption) / previousConsumption) *
-            100
+        comparison?.ultima_leitura != null && previousReading > 0
+          ? ((newValue - previousReading) / previousReading) * 100
           : null;
       const requiresJustification =
         increasePercentage != null && increasePercentage > increaseLimit;
