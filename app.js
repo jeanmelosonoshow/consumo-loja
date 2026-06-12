@@ -326,6 +326,7 @@ function renderMeterList(type, container) {
 
 function createReadingFields(meter, type) {
   const unit = type === "ENERGIA" ? "kWh" : "m³";
+  const increaseLimit = type === "ENERGIA" ? 8 : 5;
   const fields = document.createElement("div");
   fields.className = "reading-fields";
   fields.innerHTML = `
@@ -372,8 +373,8 @@ function createReadingFields(meter, type) {
       ></textarea>
     </div>
     <p class="reading-rule">
-      Motivo e observação serão obrigatórios quando o consumo for maior que o
-      consumo anterior comparável.
+      Motivo e observação serão obrigatórios quando o consumo aumentar mais de
+      ${increaseLimit}% em relação ao consumo anterior.
     </p>
   `;
   const valueInput = fields.querySelector(`#value-${meter.ID_CONTADOR}`);
@@ -411,11 +412,19 @@ function updateJustificationRequirement(meter) {
   const lastReading = Number(meter.ULTIMA_LEITURA);
   const previousConsumption = Number(meter.ULTIMO_CONSUMO);
   const currentConsumption = currentReading - lastReading;
+  const increaseLimit = meter.TIPO_CONTADOR === "ENERGIA" ? 8 : 5;
+  const increasePercentage =
+    previousConsumption > 0
+      ? ((currentConsumption - previousConsumption) / previousConsumption) * 100
+      : previousConsumption === 0 && currentConsumption > 0
+        ? Infinity
+        : null;
   const requiresJustification =
     valueInput.value !== "" &&
     meter.ULTIMA_LEITURA != null &&
     meter.ULTIMO_CONSUMO != null &&
-    currentConsumption > previousConsumption;
+    increasePercentage != null &&
+    increasePercentage > increaseLimit;
 
   reason.required = requiresJustification;
   observation.required = requiresJustification;
@@ -433,8 +442,12 @@ function updateJustificationRequirement(meter) {
         currentConsumption,
       )} ${meter.TIPO_CONTADOR === "ENERGIA" ? "kWh" : "m³"} contra ${formatReading(
         previousConsumption,
-      )}. Informe motivo e observação.`
-    : "Motivo e observação são opcionais quando não há aumento comparável.";
+      )}, ${
+        Number.isFinite(increasePercentage)
+          ? `aumento de ${formatPercentage(increasePercentage)}%`
+          : "aumento sem base percentual anterior"
+      }. Informe motivo e observação.`
+    : `Motivo e observação são opcionais quando o aumento não ultrapassa ${increaseLimit}%.`;
 }
 
 function renderLoading() {
@@ -542,6 +555,12 @@ function formatReading(value) {
   return new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 3,
   }).format(Number(value));
+}
+
+function formatPercentage(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2,
+  }).format(Number(value) || 0);
 }
 
 function formatDate(value) {

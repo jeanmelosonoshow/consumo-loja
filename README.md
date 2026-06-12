@@ -206,9 +206,14 @@ Na mesma transação do envio, a API cria um registro `PENDENTE` em
 contadores ativos da filial. A restrição única por filial e data impede
 pendências duplicadas.
 
-Motivo e observação permanecem opcionais quando não há aumento comparável. Se o
-consumo calculado da nova leitura for maior que o consumo anterior do contador,
-ambos tornam-se obrigatórios no formulário e na API.
+Motivo e observação permanecem opcionais enquanto o aumento calculado não
+ultrapassar o limite do recurso. Ambos tornam-se obrigatórios no formulário e
+na API quando o consumo aumentar mais de:
+
+```text
+Energia elétrica -> 8%
+Água              -> 5%
+```
 
 Os motivos são organizados em:
 

@@ -67,13 +67,18 @@ async function createReadings(request, response, sql) {
   }
 
   const activeMeters = await sql`
-    SELECT id_contador::text AS id_contador
+    SELECT
+      id_contador::text AS id_contador,
+      tipo_contador
     FROM cadastro_contador
     WHERE idfilial_usr = ${filial}
       AND status = 'T'
     ORDER BY id_contador
   `;
   const activeIds = activeMeters.map((meter) => meter.id_contador);
+  const meterTypes = new Map(
+    activeMeters.map((meter) => [meter.id_contador, meter.tipo_contador]),
+  );
   const receivedIds = readings.map((reading) => String(reading.ID_CONTADOR));
   const uniqueReceivedIds = new Set(receivedIds);
 
@@ -138,15 +143,24 @@ async function createReadings(request, response, sql) {
         comparison?.ultima_leitura == null
           ? null
           : newValue - Number(comparison.ultima_leitura);
+      const previousConsumption = Number(comparison?.ultimo_consumo);
+      const resource = meterTypes.get(String(reading.ID_CONTADOR));
+      const increaseLimit = resource === "ENERGIA" ? 8 : 5;
+      const increasePercentage =
+        currentConsumption != null && previousConsumption > 0
+          ? ((currentConsumption - previousConsumption) / previousConsumption) *
+            100
+          : previousConsumption === 0 && currentConsumption > 0
+            ? Infinity
+            : null;
       const requiresJustification =
-        currentConsumption != null &&
-        comparison?.ultimo_consumo != null &&
-        currentConsumption > Number(comparison.ultimo_consumo);
+        increasePercentage != null && increasePercentage > increaseLimit;
 
       if (requiresJustification && (!reason || !observation)) {
         return response.status(422).json({
-          message:
-            "Foi identificado aumento de consumo. Informe motivo e observação para todos os contadores com aumento.",
+          message: `Foi identificado aumento superior a ${increaseLimit}% no consumo de ${
+            resource === "ENERGIA" ? "energia" : "água"
+          }. Informe motivo e observação.`,
         });
       }
     }
