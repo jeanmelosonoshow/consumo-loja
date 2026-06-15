@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Manual de utilização do formulário diário de consumo de energia e água."
+    />
+    <title>Manual de leitura diária | Consumo das lojas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #17212b;
+        --muted: #657180;
+        --line: #dfe5ea;
+        --surface: #fff;
+        --background: #f3f7f7;
+        --primary: #176b55;
+        --primary-dark: #104d3e;
+        --energy: #ed991c;
+        --energy-soft: #fff4dc;
+        --water: #2389d7;
+        --water-soft: #e8f5ff;
+        --danger: #bf3d27;
+        --shadow: 0 18px 55px rgb(30 54 64 / 10%);
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        min-width: 320px;
+        margin: 0;
+        background:
+          radial-gradient(circle at 8% 5%, rgb(35 137 215 / 10%), transparent 25%),
+          radial-gradient(circle at 92% 18%, rgb(237 153 28 / 12%), transparent 25%),
+          var(--background);
+        color: var(--ink);
+        font-family: "DM Sans", Arial, sans-serif;
+      }
+
+      button, a { font: inherit; }
+      a { color: inherit; }
+
+      .topbar {
+        position: sticky;
+        z-index: 30;
+        top: 0;
+        min-height: 66px;
+        padding: 10px clamp(16px, 5vw, 72px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid rgb(223 229 234 / 80%);
+        background: rgb(255 255 255 / 88%);
+        backdrop-filter: blur(15px);
+      }
+
+      .brand { display: flex; align-items: center; gap: 10px; }
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        border-radius: 11px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+      }
+      .brand strong, .brand span { display: block; }
+      .brand span { color: var(--muted); font-size: .7rem; }
+
+      .topbar a {
+        padding: 9px 13px;
+        border-radius: 9px;
+        background: var(--primary);
+        color: #fff;
+        font-size: .74rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .hero {
+        width: min(1180px, calc(100% - 32px));
+        min-height: 72vh;
+        margin: 0 auto;
+        padding: clamp(60px, 10vw, 120px) 0 70px;
+        display: grid;
+        grid-template-columns: 1.08fr .92fr;
+        align-items: center;
+        gap: clamp(30px, 6vw, 80px);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--primary);
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        max-width: 720px;
+        margin: 0;
+        font-size: clamp(2.5rem, 7vw, 5.4rem);
+        letter-spacing: -.07em;
+        line-height: .95;
+      }
+      .hero-copy > p:not(.eyebrow) {
+        max-width: 630px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: clamp(.95rem, 2vw, 1.12rem);
+        line-height: 1.7;
+      }
+
+      .hero-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; }
+      .button {
+        min-height: 44px;
+        padding: 11px 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        font-size: .78rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .button--primary { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+      .daily-card {
+        position: relative;
+        padding: 30px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgb(255 255 255 / 88%);
+        box-shadow: var(--shadow);
+        animation: float 4s ease-in-out infinite;
+      }
+      .daily-card::before {
+        position: absolute;
+        width: 210px;
+        height: 210px;
+        right: -90px;
+        top: -100px;
+        border-radius: 50%;
+        background: var(--energy-soft);
+        content: "";
+      }
+      .daily-card__icon {
+        width: 58px;
+        height: 58px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        background: var(--energy-soft);
+        color: var(--energy);
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+      .daily-card h2 { margin: 24px 0 8px; font-size: 1.7rem; letter-spacing: -.04em; }
+      .daily-card p { margin: 0; color: var(--muted); line-height: 1.6; }
+      .daily-rule {
+        margin-top: 22px;
+        padding: 14px;
+        border-left: 4px solid var(--danger);
+        border-radius: 8px;
+        background: #fff3ef;
+        color: #813622;
+        font-size: .78rem;
+        font-weight: 600;
+        line-height: 1.55;
+      }
+
+      .progress-nav {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto 35px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 7px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: var(--shadow);
+      }
+      .progress-nav a {
+        padding: 10px;
+        border-radius: 9px;
+        color: var(--muted);
+        font-size: .7rem;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        transition: 160ms ease;
+      }
+      .progress-nav a:hover, .progress-nav a.active { background: #edf7f3; color: var(--primary); }
+
+      .manual {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding-bottom: 90px;
+      }
+      .step {
+        margin-top: 24px;
+        padding: clamp(22px, 4vw, 42px);
+        display: grid;
+        grid-template-columns: .85fr 1.15fr;
+        gap: clamp(24px, 5vw, 60px);
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgb(255 255 255 / 92%);
+        box-shadow: var(--shadow);
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 550ms ease, transform 550ms ease;
+      }
+      .step.visible { opacity: 1; transform: translateY(0); }
+      .step:nth-child(even) .step-copy { order: 2; }
+      .step:nth-child(even) .visual { order: 1; }
+      .step-number {
+        width: 34px;
+        height: 34px;
+        margin-bottom: 18px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-size: .76rem;
+        font-weight: 700;
+      }
+      .step h2 { margin: 0; font-size: clamp(1.55rem, 4vw, 2.4rem); letter-spacing: -.05em; }
+      .step-copy > p { color: var(--muted); line-height: 1.7; }
+      .check-list { margin: 20px 0 0; padding: 0; display: grid; gap: 10px; list-style: none; }
+      .check-list li { padding-left: 26px; position: relative; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+      .check-list li::before {
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 18px;
+        height: 18px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #e7f6ef;
+        color: var(--primary);
+        content: "✓";
+        font-size: .65rem;
+        font-weight: 700;
+      }
+
+      .visual {
+        min-width: 0;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #f7fafa;
+      }
+      .visual img {
+        width: 100%;
+        display: block;
+        border-radius: 11px;
+        cursor: zoom-in;
+      }
+      .visual-caption { margin: 10px 2px 0; color: var(--muted); font-size: .65rem; }
+
+      .mock-window {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+      .mock-window__bar { height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 5px; background: #27343d; }
+      .mock-window__bar i { width: 7px; height: 7px; border-radius: 50%; background: #dbe4e8; opacity: .65; }
+      .mock-window__body { padding: 22px; }
+      .mock-login { max-width: 310px; margin: 0 auto; }
+      .mock-login h3 { margin: 0 0 4px; }
+      .mock-login p { margin: 0 0 18px; color: var(--muted); font-size: .7rem; }
+      .mock-field { margin-top: 9px; }
+      .mock-field span { display: block; margin-bottom: 4px; font-size: .62rem; font-weight: 700; }
+      .mock-field div { height: 34px; border: 1px solid #cad5da; border-radius: 7px; background: #fafcfc; }
+      .mock-submit { height: 36px; margin-top: 14px; display: grid; place-items: center; border-radius: 7px; background: var(--primary); color: #fff; font-size: .66rem; font-weight: 700; }
+      .meter-modal { padding: 22px; border-radius: 12px; background: #fff; box-shadow: 0 15px 35px rgb(20 40 48 / 14%); }
+      .meter-modal__top { display: flex; justify-content: space-between; gap: 10px; }
+      .meter-modal h3 { margin: 2px 0 15px; }
+      .resource-pills { display: flex; gap: 8px; margin-top: 16px; }
+      .resource-pill { padding: 7px 9px; border-radius: 7px; font-size: .62rem; font-weight: 700; }
+      .resource-pill--energy { background: var(--energy-soft); color: #a86100; }
+      .resource-pill--water { background: var(--water-soft); color: #14689f; }
+
+      .critical {
+        border-color: #efc2b8;
+        background: linear-gradient(145deg, #fff, #fff7f4);
+      }
+      .critical .step-number { background: var(--danger); }
+      .critical strong { color: var(--danger); }
+
+      .limits {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .limit { padding: 14px; border-radius: 10px; }
+      .limit strong, .limit span { display: block; }
+      .limit strong { font-size: 1.35rem; }
+      .limit span { margin-top: 3px; color: var(--muted); font-size: .68rem; }
+      .limit--energy { background: var(--energy-soft); }
+      .limit--water { background: var(--water-soft); }
+
+      .footer {
+        padding: 35px 16px;
+        border-top: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+        font-size: .72rem;
+        text-align: center;
+      }
+
+      .lightbox {
+        position: fixed;
+        z-index: 50;
+        inset: 0;
+        padding: 20px;
+        display: none;
+        place-items: center;
+        border: 0;
+        background: rgb(18 29 36 / 84%);
+        cursor: zoom-out;
+      }
+      .lightbox.open { display: grid; }
+      .lightbox img { max-width: min(1400px, 96vw); max-height: 92vh; border-radius: 14px; box-shadow: 0 25px 80px #0008; }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition: none !important; }
+      }
+      @media (max-width: 860px) {
+        .hero, .step { grid-template-columns: 1fr; }
+        .hero { min-height: auto; padding-top: 60px; }
+        .step:nth-child(even) .step-copy, .step:nth-child(even) .visual { order: initial; }
+        .progress-nav { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 520px) {
+        .brand span { display: none; }
+        .progress-nav { display: none; }
+        .hero-actions .button { width: 100%; }
+        .limits { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">CL</span>
+        <div><strong>Manual de consumo</strong><span>Energia e água</span></div>
+      </div>
+      <a href="#passo-1">Iniciar manual</a>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Guia rápido de utilização</p>
+        <h1>Leitura diária sem complicação.</h1>
+        <p>
+          Aprenda a acessar, cadastrar os relógios e informar diariamente as
+          leituras de energia e água antes do fechamento do caixa.
+        </p>
+        <div class="hero-actions">
+          <a class="button button--primary" href="#passo-1">Ver passo a passo</a>
+          <a class="button" href="#bloqueio">Entender o bloqueio do caixa</a>
+        </div>
+      </div>
+      <aside class="daily-card">
+        <div class="daily-card__icon">!</div>
+        <h2>Preenchimento diário e obrigatório</h2>
+        <p>
+          Todos os relógios ativos da filial devem ser preenchidos todos os dias.
+        </p>
+        <div class="daily-rule">
+          Sem a leitura completa do dia, o sistema FDC não permitirá finalizar o
+          fechamento do caixa.
+        </div>
+      </aside>
+    </section>
+
+    <nav class="progress-nav" aria-label="Etapas do manual">
+      <a href="#passo-1">1. Acesso Adianti</a>
+      <a href="#passo-2">2. Acesso externo</a>
+      <a href="#passo-3">3. Cadastrar relógio</a>
+      <a href="#passo-4">4. Leitura diária</a>
+      <a href="#bloqueio">5. Fechamento</a>
+    </nav>
+
+    <main class="manual">
+      <section id="passo-1" class="step">
+        <div class="step-copy">
+          <span class="step-number">1</span>
+          <p class="eyebrow">Acesso pelo B.I Adianti</p>
+          <h2>A filial já é identificada automaticamente</h2>
+          <p>
+            Ao abrir o formulário dentro do B.I Adianti, não é necessário informar
+            filial, usuário ou senha. O sistema identifica a unidade vinculada ao
+            usuário conectado e mostra somente os relógios daquela filial.
+          </p>
+          <ul class="check-list">
+            <li>Acesse normalmente o B.I Adianti.</li>
+            <li>Abra a opção de consumo da filial.</li>
+            <li>Confira o código da filial exibido no topo do formulário.</li>
+          </ul>
+        </div>
+        <figure class="visual">
+          <img src="assets/manual/formulario-no-adianti.png" alt="Formulário aberto dentro do B.I Adianti com filial identificada" />
+          <figcaption class="visual-caption">Exemplo: o Adianti identificou automaticamente a filial 05.</figcaption>
+        </figure>
+      </section>
+
+      <section id="passo-2" class="step">
+        <div class="step-copy">
+          <span class="step-number">2</span>
+          <p class="eyebrow">Acesso fora do Adianti</p>
+          <h2>Use o mesmo login do FDC Web</h2>
+          <p>
+            Quando o formulário for aberto fora do ambiente Adianti, será exibida
+            uma tela de identificação. Informe o mesmo usuário e senha utilizados
+            para acessar o FDC Web. Após a validação, o sistema encontrará sua filial.
+          </p>
+          <ul class="check-list">
+            <li>Não compartilhe suas credenciais.</li>
+            <li>O acesso carregará somente a filial vinculada ao seu usuário.</li>
+            <li>Em caso de senha inválida, confirme o acesso no FDC Web.</li>
+          </ul>
+        </div>
+        <div class="visual">
+          <div class="mock-window">
+            <div class="mock-window__bar"><i></i><i></i><i></i></div>
+            <div class="mock-window__body">
+              <div class="mock-login">
+                <p class="eyebrow">Acesso ao formulário</p>
+                <h3>Identifique sua unidade</h3>
+                <p>Entre com o mesmo usuário utilizado no FDC Web.</p>
+                <div class="mock-field"><span>Usuário</span><div></div></div>
+                <div class="mock-field"><span>Senha</span><div></div></div>
+                <div class="mock-submit">Entrar</div>
+              </div>
+            </div>
+          </div>
+          <p class="visual-caption">Tela apresentada somente quando a filial não vier identificada pelo Adianti.</p>
+        </div>
+      </section>
+
+      <section id="passo-3" class="step">
+        <div class="step-copy">
+          <span class="step-number">3</span>
+          <p class="eyebrow">Primeiro acesso</p>
+          <h2>Cadastre cada relógio da filial</h2>
+          <p>
+            Use o botão <strong>Cadastrar relógio</strong> na seção correta de
+            Energia ou Água. Cadastre todos os medidores existentes na loja.
+          </p>
+          <ul class="check-list">
+            <li>Informe um apelido fácil de reconhecer, como “Relógio principal”.</li>
+            <li>Informe o número exibido no equipamento ou na conta.</li>
+            <li>O tipo será definido automaticamente pela seção escolhida.</li>
+          </ul>
+          <div class="resource-pills">
+            <span class="resource-pill resource-pill--energy">Energia elétrica</span>
+            <span class="resource-pill resource-pill--water">Água</span>
+          </div>
+        </div>
+        <div class="visual">
+          <div class="meter-modal">
+            <div class="meter-modal__top">
+              <div><p class="eyebrow">Novo cadastro</p><h3>Cadastrar relógio de energia</h3></div>
+              <strong>×</strong>
+            </div>
+            <div class="mock-field"><span>Apelido do relógio</span><div></div></div>
+            <div class="mock-field"><span>Número do relógio</span><div></div></div>
+            <div class="mock-submit">Salvar relógio</div>
+          </div>
+          <p class="visual-caption">Cadastre uma única vez. Depois, o relógio ficará disponível diariamente.</p>
+        </div>
+      </section>
+
+      <section id="passo-4" class="step">
+        <div class="step-copy">
+          <span class="step-number">4</span>
+          <p class="eyebrow">Rotina diária</p>
+          <h2>Preencha todos os relógios ativos</h2>
+          <p>
+            Informe a data e o valor acumulado mostrado em cada relógio. Nenhum
+            relógio ativo pode ficar sem preenchimento no envio do dia.
+          </p>
+          <ul class="check-list">
+            <li>A leitura informada nunca pode ser menor que a anterior.</li>
+            <li>Envie todas as leituras juntas pelo botão ao final do formulário.</li>
+            <li>O sistema mostra a última leitura registrada para conferência.</li>
+          </ul>
+          <div class="limits">
+            <div class="limit limit--energy"><strong>8%</strong><span>Acima deste aumento em energia, informe motivo e observação.</span></div>
+            <div class="limit limit--water"><strong>5%</strong><span>Acima deste aumento em água, informe motivo e observação.</span></div>
+          </div>
+        </div>
+        <figure class="visual">
+          <img src="assets/manual/formulario-leituras.png" alt="Campos de leitura diária de energia e água" />
+          <figcaption class="visual-caption">O formulário apresenta um conjunto de campos para cada relógio cadastrado.</figcaption>
+        </figure>
+      </section>
+
+      <section id="bloqueio" class="step critical">
+        <div class="step-copy">
+          <span class="step-number">5</span>
+          <p class="eyebrow">Atenção no fechamento</p>
+          <h2>Sem leitura, o caixa não fecha</h2>
+          <p>
+            O preenchimento diário é obrigatório. Se a filial tentar fechar o
+            caixa no FDC sem concluir as leituras de energia e água, o sistema
+            exibirá a mensagem de pendência e bloqueará o fechamento.
+          </p>
+          <ul class="check-list">
+            <li>Retorne ao B.I Adianti e abra o formulário de consumo.</li>
+            <li>Preencha todos os relógios ativos da filial.</li>
+            <li>Envie as leituras e tente novamente o fechamento do caixa.</li>
+          </ul>
+          <p><strong>Não deixe para preencher após o fechamento.</strong></p>
+        </div>
+        <figure class="visual">
+          <img src="assets/manual/alerta-fechamento-caixa.png" alt="Mensagem de pendência exibida ao tentar fechar o caixa sem leitura de consumo" />
+          <figcaption class="visual-caption">Mensagem apresentada pelo FDC quando a leitura diária não foi concluída.</figcaption>
+        </figure>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Manual de utilização · Controle diário de energia e água · Consumo das lojas
+    </footer>
+
+    <button id="lightbox" class="lightbox" type="button" aria-label="Fechar imagem ampliada">
+      <img alt="" />
+    </button>
+    <script>
+      const sections = [...document.querySelectorAll(".step")];
+      const links = [...document.querySelectorAll(".progress-nav a")];
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("visible");
+            links.forEach((link) =>
+              link.classList.toggle(
+                "active",
+                link.getAttribute("href") === `#${entry.target.id}`,
+              ),
+            );
+          });
+        },
+        { threshold: 0.28 },
+      );
+      sections.forEach((section) => observer.observe(section));
+
+      const lightbox = document.querySelector("#lightbox");
+      const lightboxImage = lightbox.querySelector("img");
+      document.querySelectorAll(".visual img").forEach((image) => {
+        image.addEventListener("click", () => {
+          lightboxImage.src = image.src;
+          lightboxImage.alt = image.alt;
+          lightbox.classList.add("open");
+        });
+      });
+      lightbox.addEventListener("click", () => lightbox.classList.remove("open"));
+    </script>
+  </body>
+</html>

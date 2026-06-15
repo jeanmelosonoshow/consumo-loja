@@ -3,6 +3,12 @@
 Formulário estático para cadastro de relógios e, futuramente, lançamento
 diário do consumo de energia e água das lojas.
 
+O manual animado de utilização está disponível em:
+
+```text
+/manual.html
+```
+
 ## Como testar
 
 Abra `index.html` incluindo a filial na URL:
