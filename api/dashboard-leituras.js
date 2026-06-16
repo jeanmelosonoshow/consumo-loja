@@ -71,8 +71,82 @@ export default async function handler(request, response) {
       FROM consumos
       ORDER BY data_leitura, tipo_contador, apelido_contador
     `;
+    const missingReadings = await sql`
+      WITH filiais_selecionadas AS (
+        SELECT UNNEST(${branches}::text[]) AS idfilial_usr
+      ),
+      contadores_ativos AS (
+        SELECT
+          c.idfilial_usr,
+          c.id_contador,
+          c.data_cadastro::date AS data_cadastro
+        FROM cadastro_contador c
+        JOIN filiais_selecionadas fs
+          ON fs.idfilial_usr = c.idfilial_usr
+        WHERE c.status = 'T'
+      ),
+      resumo_contadores AS (
+        SELECT
+          idfilial_usr,
+          COUNT(*) AS contadores_ativos,
+          MIN(data_cadastro) AS primeira_data_contador
+        FROM contadores_ativos
+        GROUP BY idfilial_usr
+      ),
+      calendario AS (
+        SELECT
+          r.idfilial_usr,
+          dia::date AS data_leitura,
+          r.contadores_ativos
+        FROM resumo_contadores r
+        CROSS JOIN LATERAL GENERATE_SERIES(
+          GREATEST(DATE_TRUNC('month', CURRENT_DATE)::date, r.primeira_data_contador),
+          CURRENT_DATE,
+          INTERVAL '1 day'
+        ) AS dia
+      ),
+      leituras_dia AS (
+        SELECT
+          l.idfilial_usr,
+          l.data_leitura,
+          COUNT(DISTINCT l.id_contador) AS leituras_registradas
+        FROM leitura_contador l
+        JOIN contadores_ativos c
+          ON c.idfilial_usr = l.idfilial_usr
+         AND c.id_contador = l.id_contador
+        WHERE l.data_leitura >= DATE_TRUNC('month', CURRENT_DATE)::date
+          AND l.data_leitura <= CURRENT_DATE
+        GROUP BY l.idfilial_usr, l.data_leitura
+      )
+      SELECT
+        c.idfilial_usr AS "IDFILIAL_USR",
+        c.data_leitura AS "DATA_LEITURA",
+        c.contadores_ativos AS "CONTADORES_ATIVOS",
+        COALESCE(l.leituras_registradas, 0) AS "LEITURAS_REGISTRADAS"
+      FROM calendario c
+      LEFT JOIN leituras_dia l
+        ON l.idfilial_usr = c.idfilial_usr
+       AND l.data_leitura = c.data_leitura
+      WHERE COALESCE(l.leituras_registradas, 0) < c.contadores_ativos
+      ORDER BY c.idfilial_usr, c.data_leitura
+    `;
+    const meterBranches = await sql`
+      SELECT
+        c.idfilial_usr AS "IDFILIAL_USR",
+        COUNT(*) AS "CONTADORES_ATIVOS"
+      FROM cadastro_contador c
+      WHERE c.idfilial_usr = ANY(${branches}::text[])
+        AND c.status = 'T'
+      GROUP BY c.idfilial_usr
+      ORDER BY c.idfilial_usr
+    `;
 
-    return response.status(200).json({ filiais: branches, leituras: readings });
+    return response.status(200).json({
+      filiais: branches,
+      leituras: readings,
+      faltas: missingReadings,
+      filiaisComContador: meterBranches,
+    });
   } catch (error) {
     console.error("Erro no dashboard de leituras:", error);
     return response.status(error.statusCode ?? 500).json({

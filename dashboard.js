@@ -93,6 +93,8 @@ async function loadDashboard() {
     paymentData,
     readingData.leituras ?? [],
     await loadSelectedBranchRates(),
+    readingData.faltas ?? [],
+    readingData.filiaisComContador ?? [],
   );
 }
 
@@ -254,7 +256,13 @@ function updateBranchSelectionSummary(usePendingSelection = false) {
       : `${first.codigo} · ${first.nome} + ${checked.length - 1} filial(is)`;
 }
 
-function renderDashboard(paymentData, readings, rates) {
+function renderDashboard(
+  paymentData,
+  readings,
+  rates,
+  missingReadings,
+  meterBranches,
+) {
   const branch = paymentData.filial ?? {};
   document.querySelector("#branch-description").textContent =
     selectedBranches.length > 1
@@ -328,6 +336,8 @@ function renderDashboard(paymentData, readings, rates) {
   renderChart("#consumption-chart", displayedConsumption, false);
   renderChart("#payment-chart", monthlyPayments, true);
   renderProjections(projections);
+  renderLatestReadings(readings);
+  renderMissingReadings(missingReadings, meterBranches);
   renderIncreaseTable(increases);
   renderBranchAverageChart(paymentData.pagamentos ?? []);
 }
@@ -711,6 +721,138 @@ function describeRateOrigin(rate) {
     : "Fallback genérico externo";
 }
 
+function renderLatestReadings(readings) {
+  const container = document.querySelector("#latest-readings");
+  const branches = selectedBranches.map((code) => ({
+    code,
+    name: getBranchName(code),
+  }));
+  const definitions = [
+    ["ENERGIA", "Energia", "kWh"],
+    ["AGUA", "Água", "m³"],
+  ];
+
+  if (!branches.length) {
+    container.innerHTML =
+      '<div class="empty-row">Nenhuma filial selecionada para exibição.</div>';
+    return;
+  }
+
+  container.replaceChildren(
+    ...branches.flatMap((branch) =>
+      definitions.map(([resource, label, unit]) => {
+        const latest = readings
+          .filter(
+            (reading) =>
+              reading.IDFILIAL_USR === branch.code &&
+              reading.TIPO_CONTADOR === resource,
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.DATA_LEITURA) - new Date(a.DATA_LEITURA) ||
+              String(a.APELIDO_CONTADOR).localeCompare(
+                String(b.APELIDO_CONTADOR),
+              ),
+          )
+          .slice(0, 3);
+        const card = document.createElement("article");
+        card.className = `latest-card ${
+          resource === "AGUA" ? "latest-card--water" : ""
+        }`;
+        card.innerHTML = `
+          <div class="latest-card__header">
+            <div>
+              <strong>${escapeHtml(branch.code)} · ${escapeHtml(branch.name)}</strong>
+              <span>${label}</span>
+            </div>
+            <small>Últimas ${latest.length || 0}</small>
+          </div>
+          ${
+            latest.length
+              ? `<div class="latest-list">${latest
+                  .map((item) => createLatestReadingItem(item, unit))
+                  .join("")}</div>`
+              : '<div class="empty-inline">Sem leituras registradas.</div>'
+          }
+        `;
+        return card;
+      }),
+    ),
+  );
+}
+
+function createLatestReadingItem(item, unit) {
+  const variation =
+    item.VARIACAO_PERCENTUAL == null
+      ? "Sem comparação"
+      : `${Number(item.VARIACAO_PERCENTUAL) > 0 ? "+" : ""}${formatNumber(
+          item.VARIACAO_PERCENTUAL,
+        )}%`;
+  return `
+    <div class="latest-item">
+      <div>
+        <strong>${formatDate(item.DATA_LEITURA)}</strong>
+        <span>${escapeHtml(item.APELIDO_CONTADOR)}</span>
+      </div>
+      <div>
+        <strong>${formatUnit(item.LEITURA, unit)}</strong>
+        <span>Consumo: ${
+          item.CONSUMO == null ? "primeira leitura" : formatUnit(item.CONSUMO, unit)
+        } · ${variation}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderMissingReadings(missingReadings, meterBranches) {
+  const body = document.querySelector("#missing-readings-table");
+
+  if (!meterBranches.length) {
+    body.innerHTML =
+      '<tr><td class="empty-row" colspan="4">Nenhuma filial selecionada possui relógio ativo cadastrado.</td></tr>';
+    return;
+  }
+
+  const missingByBranch = missingReadings.reduce((map, item) => {
+    const values = map.get(item.IDFILIAL_USR) ?? [];
+    values.push(item);
+    map.set(item.IDFILIAL_USR, values);
+    return map;
+  }, new Map());
+
+  body.replaceChildren(
+    ...meterBranches.map((branch) => {
+      const missing = missingByBranch.get(branch.IDFILIAL_USR) ?? [];
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>
+          <strong>${escapeHtml(branch.IDFILIAL_USR)}</strong>
+          <span class="muted-cell">${escapeHtml(getBranchName(branch.IDFILIAL_USR))}</span>
+        </td>
+        <td>${createMissingDateList(missing)}</td>
+        <td>${missing.length ? missing.length : '<span class="ok-badge">Em dia</span>'}</td>
+        <td>${formatConsumption(branch.CONTADORES_ATIVOS)}</td>
+      `;
+      return row;
+    }),
+  );
+}
+
+function createMissingDateList(missing) {
+  if (!missing.length) return '<span class="ok-badge">Sem pendências</span>';
+  const dates = missing.map((item) => formatDate(item.DATA_LEITURA));
+  const visible = dates.slice(0, 12);
+  const hidden = dates.length - visible.length;
+  return `
+    <div class="missing-dates">
+      ${visible
+        .map((date) => `<span class="missing-date">${escapeHtml(date)}</span>`)
+        .join("")}
+      ${hidden > 0 ? `<span class="missing-date">+${hidden}</span>` : ""}
+    </div>
+  `;
+}
+
 function renderIncreaseTable(increases) {
   const body = document.querySelector("#increase-table");
 
@@ -821,6 +963,13 @@ function formatMonth(key) {
 function formatDate(value) {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
     new Date(value),
+  );
+}
+
+function getBranchName(code) {
+  return (
+    dashboardAccess?.filiais.find((branch) => branch.codigo === code)?.nome ??
+    `Filial ${code}`
   );
 }
 

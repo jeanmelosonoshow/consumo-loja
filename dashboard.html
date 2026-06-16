@@ -127,6 +127,40 @@
       <section class="panel">
         <div class="panel__header">
           <div>
+            <p class="eyebrow">Últimas leituras</p>
+            <h2>Filiais e últimas 3 leituras por recurso</h2>
+          </div>
+          <span class="panel__hint">Energia e água por filial selecionada</span>
+        </div>
+        <div id="latest-readings" class="latest-readings"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <div>
+            <p class="eyebrow">Pendências do mês</p>
+            <h2>Filiais com relógio e dias sem leitura</h2>
+          </div>
+          <span class="panel__hint">Mês atual até hoje</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Filial</th>
+                <th>Dias sem leitura completa</th>
+                <th>Qtde. dias</th>
+                <th>Relógios ativos</th>
+              </tr>
+            </thead>
+            <tbody id="missing-readings-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <div>
             <p class="eyebrow">Acompanhamento</p>
             <h2>Dias com aumento de consumo</h2>
           </div>

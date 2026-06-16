@@ -356,12 +356,106 @@ body {
   line-height: 1.5;
 }
 
+.latest-readings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.latest-card {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--energy);
+  border-radius: 12px;
+  background: #fbfcfc;
+}
+
+.latest-card--water { border-top-color: var(--water); }
+
+.latest-card__header {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.latest-card__header strong,
+.latest-card__header span,
+.latest-card__header small {
+  display: block;
+}
+
+.latest-card__header strong { font-size: .78rem; }
+.latest-card__header span,
+.latest-card__header small { color: var(--muted); font-size: .66rem; }
+
+.latest-card__header small {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #eef3f5;
+  white-space: nowrap;
+}
+
+.latest-list { display: grid; gap: 8px; }
+
+.latest-item {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: minmax(92px, .8fr) minmax(0, 1.2fr);
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.latest-item strong,
+.latest-item span { display: block; }
+.latest-item strong { font-size: .74rem; }
+.latest-item span { margin-top: 2px; color: var(--muted); font-size: .64rem; }
+
+.empty-inline {
+  padding: 20px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: .72rem;
+  text-align: center;
+}
+
 .table-wrapper { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .76rem; }
 th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; }
 th { color: var(--muted); font-size: .65rem; text-transform: uppercase; }
 .increase-badge { color: #a34420; font-weight: 700; }
 .empty-row { padding: 35px; color: var(--muted); text-align: center; }
+.muted-cell { display: block; margin-top: 3px; color: var(--muted); font-size: .65rem; }
+
+.missing-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.missing-date,
+.ok-badge {
+  width: fit-content;
+  display: inline-block;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: .66rem;
+  font-weight: 700;
+}
+
+.missing-date {
+  background: #fff1ed;
+  color: #9a3d20;
+}
+
+.ok-badge {
+  background: #eaf7f1;
+  color: #176b55;
+}
 
 .branch-average-legend {
   margin: -8px 0 18px;
