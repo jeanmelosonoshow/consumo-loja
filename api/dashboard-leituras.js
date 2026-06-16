@@ -49,6 +49,7 @@ export default async function handler(request, response) {
         FROM leitura_contador l
         JOIN cadastro_contador c ON c.id_contador = l.id_contador
         WHERE l.idfilial_usr = ANY(${branches}::text[])
+          AND c.status = 'T'
           AND l.data_leitura >= CURRENT_DATE - INTERVAL '7 months'
       )
       SELECT
