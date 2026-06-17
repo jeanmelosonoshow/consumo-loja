@@ -38,6 +38,8 @@ const REASON_CATEGORIES = {
   FALHA_ELETRICA: "Problemas técnicos / estruturais",
   MANUTENCAO_REPARO: "Problemas técnicos / estruturais",
 };
+const EXPORTABLE_SELECTOR =
+  ".metric-card, .panel, .projection-card, .latest-card, .branch-average-row";
 
 initializeDashboard();
 
@@ -340,6 +342,7 @@ function renderDashboard(
   renderMissingReadings(missingReadings, meterBranches);
   renderIncreaseTable(increases);
   renderBranchAverageChart(paymentData.pagamentos ?? []);
+  setupExportControls();
 }
 
 function aggregateMonthlyConsumption(readings) {
@@ -934,6 +937,168 @@ function createBranchAverageBar(value, max, water, monthCount) {
       <span class="branch-average-value">${formatCurrency(value)}</span>
     </div>
   `;
+}
+
+function setupExportControls() {
+  document.querySelectorAll(EXPORTABLE_SELECTOR).forEach((block) => {
+    if (block.dataset.exportReady === "true") return;
+    block.dataset.exportReady = "true";
+
+    const actions = document.createElement("div");
+    actions.className = "export-actions";
+    actions.innerHTML = `
+      <button type="button" data-export-action="print">Imprimir</button>
+      <button type="button" data-export-action="pdf">PDF</button>
+      <button type="button" data-export-action="excel">Excel</button>
+    `;
+    actions.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const action = button.dataset.exportAction;
+      const title = getExportTitle(block);
+
+      if (action === "excel") {
+        exportBlockToExcel(block, title);
+        return;
+      }
+
+      printBlock(block, title, action === "pdf");
+    });
+
+    block.prepend(actions);
+  });
+}
+
+function printBlock(block, title, pdfMode) {
+  const printWindow = window.open("", "_blank", "width=1100,height=800");
+  if (!printWindow) {
+    showError("O navegador bloqueou a janela de impressão. Libere pop-ups para exportar.");
+    return;
+  }
+
+  const clone = createExportClone(block);
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>${escapeHtml(pdfMode ? `${title} - PDF` : title)}</title>
+        <link rel="stylesheet" href="dashboard.css">
+        <style>
+          body {
+            margin: 0;
+            padding: 28px;
+            background: #fff;
+            color: #17212b;
+            font-family: "DM Sans", Arial, sans-serif;
+          }
+          .export-actions { display: none !important; }
+          .panel, .metric-card, .projection-card, .latest-card, .branch-average-row {
+            box-shadow: none !important;
+            break-inside: avoid;
+          }
+          .export-print-title {
+            margin-bottom: 18px;
+            border-bottom: 1px solid #dfe5ea;
+            padding-bottom: 12px;
+          }
+          .export-print-title h1 {
+            margin: 0 0 5px;
+            font-size: 22px;
+          }
+          .export-print-title span {
+            color: #657180;
+            font-size: 12px;
+          }
+          @page { size: A4 landscape; margin: 12mm; }
+        </style>
+      </head>
+      <body>
+        <div class="export-print-title">
+          <h1>${escapeHtml(title)}</h1>
+          <span>Dashboard de consumo · ${escapeHtml(getExportContext())}</span>
+        </div>
+        ${clone.outerHTML}
+        <script>
+          window.addEventListener("load", () => {
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 250);
+          });
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+function exportBlockToExcel(block, title) {
+  const clone = createExportClone(block);
+  const html = `
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #cfd8df; padding: 8px; text-align: left; }
+          .export-actions { display: none; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(title)}</h1>
+        <p>Dashboard de consumo - ${escapeHtml(getExportContext())}</p>
+        ${clone.outerHTML}
+      </body>
+    </html>
+  `;
+  const blob = new Blob(["\ufeff", html], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${slugify(title)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function createExportClone(block) {
+  const clone = block.cloneNode(true);
+  clone.querySelectorAll(".export-actions").forEach((actions) => actions.remove());
+  return clone;
+}
+
+function getExportTitle(block) {
+  const title =
+    block.querySelector("h2")?.textContent ||
+    block.querySelector(".branch-average-label strong")?.textContent ||
+    block.querySelector(".latest-card__header strong")?.textContent ||
+    block.querySelector(".projection-card span")?.textContent ||
+    block.querySelector("span")?.textContent ||
+    "Dashboard de consumo";
+  return title.trim();
+}
+
+function getExportContext() {
+  const branchDescription =
+    document.querySelector("#branch-description")?.textContent?.trim() ?? "";
+  return `${branchDescription} · Gerado em ${new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date())}`;
+}
+
+function slugify(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase()
+    .slice(0, 80);
 }
 
 function lastSixMonthKeys() {
