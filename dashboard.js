@@ -987,15 +987,31 @@ function printBlock(block, title, pdfMode) {
         <style>
           body {
             margin: 0;
-            padding: 28px;
+            padding: 0;
             background: #fff;
             color: #17212b;
             font-family: "DM Sans", Arial, sans-serif;
           }
+          .export-print-page {
+            padding: 12mm;
+          }
           .export-actions { display: none !important; }
+          .export-print-content > * {
+            margin-top: 0 !important;
+          }
           .panel, .metric-card, .projection-card, .latest-card, .branch-average-row {
             box-shadow: none !important;
+          }
+          .metric-card, .projection-card, .latest-card, .branch-average-row {
             break-inside: avoid;
+          }
+          .panel {
+            break-inside: auto;
+            page-break-inside: auto;
+          }
+          table, thead, tbody, tr, th, td {
+            break-inside: auto;
+            page-break-inside: auto;
           }
           .export-print-title {
             margin-bottom: 18px;
@@ -1010,15 +1026,19 @@ function printBlock(block, title, pdfMode) {
             color: #657180;
             font-size: 12px;
           }
-          @page { size: A4 landscape; margin: 12mm; }
+          @page { size: A4 landscape; margin: 0; }
         </style>
       </head>
       <body>
-        <div class="export-print-title">
-          <h1>${escapeHtml(title)}</h1>
-          <span>Dashboard de consumo · ${escapeHtml(getExportContext())}</span>
+        <div class="export-print-page">
+          <div class="export-print-title">
+            <h1>${escapeHtml(title)}</h1>
+            <span>Dashboard de consumo · ${escapeHtml(getExportContext())}</span>
+          </div>
+          <div class="export-print-content">
+            ${clone.outerHTML}
+          </div>
         </div>
-        ${clone.outerHTML}
         <script>
           window.addEventListener("load", () => {
             setTimeout(() => {
