@@ -378,9 +378,10 @@ function createReadingFields(meter, type) {
     </p>
   `;
   const valueInput = fields.querySelector(`#value-${meter.ID_CONTADOR}`);
-  valueInput.addEventListener("input", () =>
-    updateJustificationRequirement(meter),
-  );
+  const dateInput = fields.querySelector(`#date-${meter.ID_CONTADOR}`);
+  [valueInput, dateInput].forEach((input) => {
+    input.addEventListener("input", () => updateJustificationRequirement(meter));
+  });
   return fields;
 }
 
@@ -400,6 +401,7 @@ function createReasonOptions() {
 }
 
 function updateJustificationRequirement(meter) {
+  const dateInput = document.querySelector(`#date-${meter.ID_CONTADOR}`);
   const valueInput = document.querySelector(`#value-${meter.ID_CONTADOR}`);
   const reason = document.querySelector(`#reason-${meter.ID_CONTADOR}`);
   const observation = document.querySelector(
@@ -410,14 +412,25 @@ function updateJustificationRequirement(meter) {
     .querySelector(".reading-rule");
   const currentReading = Number(valueInput.value);
   const lastReading = Number(meter.ULTIMA_LEITURA);
+  const lastConsumption = Number(meter.ULTIMO_CONSUMO);
+  const currentConsumption =
+    meter.ULTIMA_LEITURA != null ? currentReading - lastReading : null;
   const increaseLimit = meter.TIPO_CONTADOR === "ENERGIA" ? 8 : 5;
+  const latestDate = String(meter.DATA_ULTIMA_LEITURA ?? "").slice(0, 10);
+  const canCompareConsumption =
+    valueInput.value !== "" &&
+    dateInput.value !== "" &&
+    meter.ULTIMA_LEITURA != null &&
+    meter.ULTIMO_CONSUMO != null &&
+    Number.isFinite(lastConsumption) &&
+    lastConsumption > 0 &&
+    dateInput.value > latestDate;
   const increasePercentage =
-    meter.ULTIMA_LEITURA != null && lastReading > 0
-      ? ((currentReading - lastReading) / lastReading) * 100
+    canCompareConsumption && currentConsumption != null
+      ? ((currentConsumption - lastConsumption) / lastConsumption) * 100
       : null;
   const requiresJustification =
-    valueInput.value !== "" &&
-    meter.ULTIMA_LEITURA != null &&
+    canCompareConsumption &&
     increasePercentage != null &&
     increasePercentage > increaseLimit;
 
@@ -433,14 +446,14 @@ function updateJustificationRequirement(meter) {
   );
   rule.classList.toggle("reading-rule--warning", requiresJustification);
   rule.textContent = requiresJustification
-    ? `Aumento identificado: leitura atual ${formatReading(
-        currentReading,
-      )} contra leitura anterior ${formatReading(
-        lastReading,
-      )}, aumento de ${formatPercentage(
+    ? `Aumento identificado: consumo atual ${formatReading(
+        currentConsumption,
+      )} contra consumo anterior ${formatReading(
+        lastConsumption,
+      )}, variação de ${formatPercentage(
         increasePercentage,
       )}%. Informe motivo e observação.`
-    : `Motivo e observação são opcionais quando o aumento não ultrapassa ${increaseLimit}%.`;
+    : `Motivo e observação são opcionais quando a variação do consumo não ultrapassa ${increaseLimit}%.`;
 }
 
 function renderLoading() {

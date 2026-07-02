@@ -801,7 +801,13 @@ function createLatestReadingItem(item, unit) {
         <strong>${formatUnit(item.LEITURA, unit)}</strong>
         <span>Consumo: ${
           item.CONSUMO == null ? "primeira leitura" : formatUnit(item.CONSUMO, unit)
-        } · ${variation}</span>
+        }</span>
+        ${
+          item.CONSUMO_ANTERIOR == null
+            ? ""
+            : `<span>Consumo anterior: ${formatUnit(item.CONSUMO_ANTERIOR, unit)}</span>`
+        }
+        <span>Variação do consumo: ${variation}</span>
       </div>
     </div>
   `;

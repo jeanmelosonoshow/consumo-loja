@@ -30,7 +30,7 @@ export default async function handler(request, response) {
     );
     const branches = selectAuthorizedBranches(access, request.query.filiais);
     const readings = await sql`
-      WITH consumos AS (
+      WITH leituras_ordenadas AS (
         SELECT
           l.id_leitura,
           l.idfilial_usr,
@@ -39,20 +39,46 @@ export default async function handler(request, response) {
           c.tipo_contador,
           l.data_leitura,
           l.leitura,
-          l.leitura_anterior,
           NULLIF(to_jsonb(l)->>'motivo', '') AS motivo,
           NULLIF(to_jsonb(l)->>'observacao', '') AS observacao,
-          CASE
-            WHEN l.leitura_anterior IS NULL THEN NULL
-            ELSE l.leitura - l.leitura_anterior
-          END AS consumo
+          LAG(l.leitura) OVER (
+            PARTITION BY l.id_contador
+            ORDER BY l.data_leitura
+          ) AS leitura_anterior,
+          LAG(l.leitura, 2) OVER (
+            PARTITION BY l.id_contador
+            ORDER BY l.data_leitura
+          ) AS leitura_anterior_da_anterior
         FROM leitura_contador l
         JOIN cadastro_contador c
           ON c.id_contador = l.id_contador
          AND c.idfilial_usr = l.idfilial_usr
         WHERE l.idfilial_usr = ANY(${branches}::text[])
           AND c.status = 'T'
-          AND l.data_leitura >= CURRENT_DATE - INTERVAL '7 months'
+      ),
+      consumos AS (
+        SELECT
+          id_leitura,
+          idfilial_usr,
+          id_contador,
+          apelido_contador,
+          tipo_contador,
+          data_leitura,
+          leitura,
+          leitura_anterior,
+          motivo,
+          observacao,
+          CASE
+            WHEN leitura_anterior IS NULL THEN NULL
+            ELSE leitura - leitura_anterior
+          END AS consumo,
+          CASE
+            WHEN leitura_anterior IS NULL
+              OR leitura_anterior_da_anterior IS NULL THEN NULL
+            ELSE leitura_anterior - leitura_anterior_da_anterior
+          END AS consumo_anterior
+        FROM leituras_ordenadas
+        WHERE data_leitura >= CURRENT_DATE - INTERVAL '7 months'
       )
       SELECT
         id_leitura AS "ID_LEITURA",
@@ -64,12 +90,12 @@ export default async function handler(request, response) {
         leitura AS "LEITURA",
         leitura_anterior AS "LEITURA_ANTERIOR",
         consumo AS "CONSUMO",
-        NULL::numeric AS "CONSUMO_ANTERIOR",
+        consumo_anterior AS "CONSUMO_ANTERIOR",
         motivo AS "MOTIVO",
         observacao AS "OBSERVACAO",
         CASE
-          WHEN leitura_anterior IS NULL OR leitura_anterior = 0 THEN NULL
-          ELSE ROUND(((leitura - leitura_anterior) / leitura_anterior) * 100, 2)
+          WHEN consumo_anterior IS NULL OR consumo_anterior = 0 THEN NULL
+          ELSE ROUND(((consumo - consumo_anterior) / consumo_anterior) * 100, 2)
         END AS "VARIACAO_PERCENTUAL"
       FROM consumos
       ORDER BY data_leitura, tipo_contador, apelido_contador

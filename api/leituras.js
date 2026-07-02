@@ -124,11 +124,21 @@ async function createReadings(request, response, sql) {
   if (canSaveJustification) {
     for (const reading of readings) {
       const [comparison] = await sql`
+        WITH anteriores AS (
+          SELECT
+            leitura,
+            data_leitura,
+            LAG(leitura) OVER (
+              ORDER BY data_leitura
+            ) AS leitura_anterior_da_anterior
+          FROM leitura_contador
+          WHERE id_contador = ${String(reading.ID_CONTADOR)}
+            AND data_leitura < ${normalizeText(reading.DATA_LEITURA)}
+        )
         SELECT
-          leitura AS ultima_leitura
-        FROM leitura_contador
-        WHERE id_contador = ${String(reading.ID_CONTADOR)}
-          AND data_leitura < ${normalizeText(reading.DATA_LEITURA)}
+          leitura AS ultima_leitura,
+          leitura - leitura_anterior_da_anterior AS consumo_anterior
+        FROM anteriores
         ORDER BY data_leitura DESC
         LIMIT 1
       `;
@@ -136,11 +146,16 @@ async function createReadings(request, response, sql) {
       const reason = normalizeOptionalText(reading.MOTIVO, 120);
       const observation = normalizeOptionalText(reading.OBSERVACAO, 500);
       const previousReading = Number(comparison?.ultima_leitura);
+      const previousConsumption = Number(comparison?.consumo_anterior);
+      const currentConsumption =
+        comparison?.ultima_leitura != null ? newValue - previousReading : null;
       const resource = meterTypes.get(String(reading.ID_CONTADOR));
       const increaseLimit = resource === "ENERGIA" ? 8 : 5;
       const increasePercentage =
-        comparison?.ultima_leitura != null && previousReading > 0
-          ? ((newValue - previousReading) / previousReading) * 100
+        currentConsumption != null &&
+        Number.isFinite(previousConsumption) &&
+        previousConsumption > 0
+          ? ((currentConsumption - previousConsumption) / previousConsumption) * 100
           : null;
       const requiresJustification =
         increasePercentage != null && increasePercentage > increaseLimit;
