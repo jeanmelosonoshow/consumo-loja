@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Administração de relógios e leituras de consumo." />
+    <title>Admin consumo das lojas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <section id="login-screen" class="login-screen">
+      <form id="login-form" class="login-card">
+        <span class="brand-mark">CL</span>
+        <p class="eyebrow">Administração</p>
+        <h1>Acesso restrito</h1>
+        <p>Entre com seu usuário do FDC Web. O acesso será liberado somente para funcionários autorizados.</p>
+        <label>
+          Usuário
+          <input name="usuario" type="text" autocomplete="username" required />
+        </label>
+        <label>
+          Senha
+          <input name="senha" type="password" autocomplete="current-password" required />
+        </label>
+        <p id="login-error" class="message message--error" hidden></p>
+        <button class="button button--primary" type="submit">Entrar no admin</button>
+      </form>
+    </section>
+
+    <section id="admin-app" hidden>
+      <header class="topbar">
+        <div class="topbar__brand">
+          <span class="brand-mark">CL</span>
+          <div>
+            <strong>Admin consumo das lojas</strong>
+            <span id="admin-user">Usuário autenticado</span>
+          </div>
+        </div>
+        <button id="logout-button" class="button button--secondary" type="button">Sair</button>
+      </header>
+
+      <main class="page">
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Manutenção</p>
+            <h1>Relógios e leituras</h1>
+            <p>Ajuste cadastros de relógios, ative/inative contadores e corrija leituras lançadas.</p>
+          </div>
+        </section>
+
+        <p id="admin-message" class="message" hidden></p>
+
+        <nav class="tabs" aria-label="Seções administrativas">
+          <button class="tab tab--active" type="button" data-tab="meters">Relógios</button>
+          <button class="tab" type="button" data-tab="readings">Leituras</button>
+        </nav>
+
+        <section id="meters-panel" class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="eyebrow">Cadastro</p>
+              <h2>Relógios cadastrados</h2>
+            </div>
+            <form id="meters-filter" class="filter-form">
+              <label>
+                Filial
+                <input name="filial" maxlength="30" placeholder="Ex.: 04" />
+              </label>
+              <button class="button button--primary" type="submit">Buscar</button>
+            </form>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Filial</th>
+                  <th>Tipo</th>
+                  <th>Apelido</th>
+                  <th>Número</th>
+                  <th>Status</th>
+                  <th>Última leitura</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="meters-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="readings-panel" class="panel" hidden>
+          <div class="panel__header">
+            <div>
+              <p class="eyebrow">Correção</p>
+              <h2>Leituras lançadas</h2>
+            </div>
+            <form id="readings-filter" class="filter-form filter-form--wide">
+              <label>
+                Filial
+                <input name="filial" maxlength="30" placeholder="Ex.: 04" />
+              </label>
+              <label>
+                ID contador
+                <input name="idContador" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Início
+                <input name="dataInicio" type="date" />
+              </label>
+              <label>
+                Fim
+                <input name="dataFim" type="date" />
+              </label>
+              <button class="button button--primary" type="submit">Buscar</button>
+            </form>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Filial</th>
+                  <th>Contador</th>
+                  <th>Tipo</th>
+                  <th>Data</th>
+                  <th>Leitura</th>
+                  <th>Leitura anterior</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="readings-table"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

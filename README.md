@@ -342,3 +342,30 @@ O dashboard classifica as contas do ERP por:
 1.02.01.03 -> Energia
 1.02.01.02 -> Água
 ```
+## Admin
+
+A página administrativa fica em:
+
+```text
+/admin.html
+```
+
+O acesso exige login com usuário e senha do FDC Web. Após validar o login no
+Firebird, a API confere se o `IDFUNCIONARIO` está autorizado em:
+
+```text
+lib/admin-funcionarios.json
+```
+
+Exemplo:
+
+```json
+{
+  "funcionariosPermitidos": ["123", "456"]
+}
+```
+
+Pelo admin é possível alterar apelido, número e status dos relógios, além de
+corrigir o valor de uma leitura lançada. Ao corrigir uma leitura, a próxima
+leitura do mesmo contador tem seu `leitura_anterior` recalculado, e a data é
+marcada novamente na fila `sincronizacao_firebird` para reenvio ao Firebird.
