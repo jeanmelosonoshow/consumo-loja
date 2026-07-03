@@ -20,11 +20,11 @@ function initialize() {
   logoutButton.addEventListener("click", logout);
   metersFilter.addEventListener("submit", (event) => {
     event.preventDefault();
-    loadMeters();
+    loadMeters().catch((error) => showMessage(error.message, true));
   });
   readingsFilter.addEventListener("submit", (event) => {
     event.preventDefault();
-    loadReadings();
+    loadReadings().catch((error) => showMessage(error.message, true));
   });
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => switchTab(button.dataset.tab));
@@ -32,7 +32,7 @@ function initialize() {
 
   if (session?.token) {
     showAdmin();
-    loadMeters();
+    loadMeters().catch((error) => showMessage(error.message, true));
   } else {
     showLogin();
   }
@@ -68,7 +68,11 @@ async function login(event) {
     sessionStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session));
     loginForm.reset();
     showAdmin();
-    await loadMeters();
+    try {
+      await loadMeters();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
   } catch (error) {
     loginError.textContent = error.message || "Não foi possível entrar no admin.";
     loginError.classList.add("message--error");
@@ -92,6 +96,8 @@ function showLogin() {
 function showAdmin() {
   loginScreen.hidden = true;
   adminApp.hidden = false;
+  loginError.hidden = true;
+  loginError.classList.add("message--error");
   adminUser.textContent = `${session.nomefuncionario || "Funcionário"} · ${session.idfuncionario}`;
 }
 
@@ -101,7 +107,9 @@ function switchTab(tab) {
   });
   document.querySelector("#meters-panel").hidden = tab !== "meters";
   document.querySelector("#readings-panel").hidden = tab !== "readings";
-  if (tab === "readings" && !readingsTable.children.length) loadReadings();
+  if (tab === "readings" && !readingsTable.children.length) {
+    loadReadings().catch((error) => showMessage(error.message, true));
+  }
 }
 
 async function loadMeters() {
