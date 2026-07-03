@@ -285,7 +285,13 @@ function addAffectedDate(map, branch, date) {
 }
 
 function dateKey(value) {
-  return String(value).slice(0, 10);
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const text = String(value ?? "").trim();
+  const isoDate = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (isoDate) return isoDate;
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return text.slice(0, 10);
 }
 
 function normalizeText(value) {
