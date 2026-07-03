@@ -1,4 +1,5 @@
 const ADMIN_STORAGE_KEY = "consumo-loja:admin";
+const REQUEST_TIMEOUT_MS = 25000;
 const loginScreen = document.querySelector("#login-screen");
 const adminApp = document.querySelector("#admin-app");
 const loginForm = document.querySelector("#login-form");
@@ -45,7 +46,10 @@ async function login(event) {
 
   try {
     setLoading(submit, true);
-    const response = await fetch("/api/admin-login", {
+    loginError.textContent = "Validando acesso administrativo...";
+    loginError.classList.remove("message--error");
+    loginError.hidden = false;
+    const response = await fetchWithTimeout("/api/admin-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -53,7 +57,7 @@ async function login(event) {
         senha: formData.get("senha"),
       }),
     });
-    const result = await response.json();
+    const result = await readJsonResponse(response);
     if (!response.ok) throw new Error(result.message);
 
     session = {
@@ -67,6 +71,7 @@ async function login(event) {
     await loadMeters();
   } catch (error) {
     loginError.textContent = error.message || "Não foi possível entrar no admin.";
+    loginError.classList.add("message--error");
     loginError.hidden = false;
   } finally {
     setLoading(submit, false);
@@ -211,7 +216,7 @@ async function saveReading(row, id) {
 }
 
 async function apiFetch(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -219,12 +224,41 @@ async function apiFetch(url, options = {}) {
       ...(options.headers ?? {}),
     },
   });
-  const data = await response.json();
+  const data = await readJsonResponse(response);
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) logout();
     throw new Error(data.message || "Não foi possível concluir a operação.");
   }
   return data;
+}
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("A API demorou para responder. Verifique a conexão com o ERP e tente novamente.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return {
+      message: response.ok
+        ? "Resposta inválida recebida da API."
+        : "A API retornou uma resposta inválida. Verifique se a versão publicada está atualizada.",
+    };
+  }
 }
 
 function showMessage(message, error = false) {
