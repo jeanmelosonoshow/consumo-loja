@@ -64,7 +64,8 @@ async function listReadings(request, response, sql) {
     FROM leitura_contador l
     JOIN cadastro_contador c
       ON c.id_contador = l.id_contador
-    WHERE (${hasBranchFilter} = false OR l.idfilial_usr = ${filial})
+    WHERE c.status = 'T'
+      AND (${hasBranchFilter} = false OR l.idfilial_usr = ${filial})
       AND (${hasMeterFilter} = false OR l.id_contador = ${idContador})
       AND (${hasStartDate} = false OR l.data_leitura >= ${dataInicio}::date)
       AND (${hasEndDate} = false OR l.data_leitura <= ${dataFim}::date)
