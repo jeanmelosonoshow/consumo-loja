@@ -3,6 +3,7 @@ import { handleAdminError, requireAdmin } from "../lib/admin-auth.js";
 
 const CODIGO_FILIAL_VALIDO = /^[A-Za-z0-9._-]{1,30}$/;
 const DATA_VALIDA = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_BATCH_READINGS = 800;
 
 export default async function handler(request, response) {
   const connectionString =
@@ -19,7 +20,7 @@ export default async function handler(request, response) {
     const sql = neon(connectionString);
 
     if (request.method === "GET") return await listReadings(request, response, sql);
-    if (request.method === "PATCH") return await updateReading(request, response, sql);
+    if (request.method === "PATCH") return await updateReadings(request, response, sql);
 
     response.setHeader("Allow", "GET, PATCH");
     return response.status(405).json({ message: "Método não permitido." });
@@ -76,99 +77,145 @@ async function listReadings(request, response, sql) {
   return response.status(200).json({ leituras: readings });
 }
 
-async function updateReading(request, response, sql) {
-  const id = Number(request.body?.ID_LEITURA);
-  const value = Number(request.body?.LEITURA);
+async function updateReadings(request, response, sql) {
+  const submittedReadings = Array.isArray(request.body?.LEITURAS)
+    ? request.body.LEITURAS
+    : [{ ID_LEITURA: request.body?.ID_LEITURA, LEITURA: request.body?.LEITURA }];
 
-  if (!Number.isInteger(id) || id <= 0) {
-    return response.status(400).json({ message: "Leitura inválida." });
-  }
-  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
-    return response.status(400).json({ message: "Informe um valor de leitura inteiro e maior ou igual a zero." });
+  if (!submittedReadings.length || submittedReadings.length > MAX_BATCH_READINGS) {
+    return response.status(400).json({ message: "Informe de 1 a 800 leituras para correção." });
   }
 
-  const [current] = await sql`
+  const corrections = submittedReadings.map((reading) => ({
+    id: Number(reading.ID_LEITURA),
+    value: Number(reading.LEITURA),
+  }));
+
+  const invalidCorrection = corrections.find(
+    (reading) => !Number.isInteger(reading.id) || reading.id <= 0 ||
+      !Number.isFinite(reading.value) || !Number.isInteger(reading.value) || reading.value < 0,
+  );
+
+  if (invalidCorrection) {
+    return response.status(400).json({
+      message: "Todas as leituras devem ter ID válido e valor inteiro maior ou igual a zero.",
+    });
+  }
+
+  const ids = [...new Set(corrections.map((reading) => reading.id))];
+  if (ids.length !== corrections.length) {
+    return response.status(400).json({ message: "A lista possui leitura repetida. Pesquise novamente antes de corrigir." });
+  }
+
+  const selectedReadings = await sql`
     SELECT
       l.id_leitura,
       l.idfilial_usr,
       l.id_contador,
       l.data_leitura,
       l.leitura,
-      anterior.leitura AS leitura_anterior_calculada,
-      proxima.id_leitura AS id_proxima_leitura,
-      proxima.data_leitura AS data_proxima_leitura,
-      proxima.leitura AS proxima_leitura
+      c.status AS status_contador
     FROM leitura_contador l
-    LEFT JOIN LATERAL (
-      SELECT leitura
-      FROM leitura_contador la
-      WHERE la.id_contador = l.id_contador
-        AND la.data_leitura < l.data_leitura
-      ORDER BY la.data_leitura DESC
-      LIMIT 1
-    ) anterior ON TRUE
-    LEFT JOIN LATERAL (
-      SELECT id_leitura, data_leitura, leitura
-      FROM leitura_contador lp
-      WHERE lp.id_contador = l.id_contador
-        AND lp.data_leitura > l.data_leitura
-      ORDER BY lp.data_leitura ASC
-      LIMIT 1
-    ) proxima ON TRUE
-    WHERE l.id_leitura = ${id}
+    JOIN cadastro_contador c
+      ON c.id_contador = l.id_contador
+    WHERE c.status = 'T'
+      AND l.id_leitura = ANY(${ids}::bigint[])
+    ORDER BY l.id_contador, l.data_leitura
   `;
 
-  if (!current) return response.status(404).json({ message: "Leitura não encontrada." });
-
-  const previousValue = current.leitura_anterior_calculada == null
-    ? null
-    : Number(current.leitura_anterior_calculada);
-  const nextValue = current.proxima_leitura == null
-    ? null
-    : Number(current.proxima_leitura);
-
-  if (previousValue != null && value < previousValue) {
-    return response.status(422).json({
-      message: `A leitura corrigida não pode ser menor que a leitura anterior (${formatNumber(previousValue)}).`,
+  if (selectedReadings.length !== ids.length) {
+    return response.status(404).json({
+      message: "Uma ou mais leituras não foram encontradas ou pertencem a relógios inativos. Pesquise novamente.",
     });
   }
 
-  if (nextValue != null && value > nextValue) {
-    return response.status(422).json({
-      message: `A leitura corrigida não pode ser maior que a próxima leitura (${formatNumber(nextValue)}).`,
-    });
+  const valueById = new Map(corrections.map((reading) => [reading.id, reading.value]));
+  const groups = groupByMeter(selectedReadings);
+  const updates = [];
+  const nextReadingUpdates = [];
+  const affectedDates = new Map();
+
+  for (const readings of groups.values()) {
+    const firstReading = readings[0];
+    const lastReading = readings.at(-1);
+    const [previousReading] = await sql`
+      SELECT leitura
+      FROM leitura_contador
+      WHERE id_contador = ${firstReading.id_contador}
+        AND data_leitura < ${dateKey(firstReading.data_leitura)}::date
+      ORDER BY data_leitura DESC
+      LIMIT 1
+    `;
+    const [nextReading] = await sql`
+      SELECT id_leitura, idfilial_usr, id_contador, data_leitura, leitura
+      FROM leitura_contador
+      WHERE id_contador = ${lastReading.id_contador}
+        AND data_leitura > ${dateKey(lastReading.data_leitura)}::date
+      ORDER BY data_leitura ASC
+      LIMIT 1
+    `;
+
+    let previousValue = previousReading?.leitura == null ? null : Number(previousReading.leitura);
+
+    for (const reading of readings) {
+      const newValue = valueById.get(Number(reading.id_leitura));
+      if (previousValue != null && newValue < previousValue) {
+        return response.status(422).json({
+          message: `A leitura de ${formatDate(reading.data_leitura)} do contador ${reading.id_contador} não pode ser menor que a leitura anterior (${formatNumber(previousValue)}).`,
+        });
+      }
+
+      updates.push({
+        id: Number(reading.id_leitura),
+        branch: reading.idfilial_usr,
+        date: dateKey(reading.data_leitura),
+        value: newValue,
+        previousValue,
+      });
+      addAffectedDate(affectedDates, reading.idfilial_usr, reading.data_leitura);
+      previousValue = newValue;
+    }
+
+    const nextValue = nextReading?.leitura == null ? null : Number(nextReading.leitura);
+    if (nextValue != null && previousValue > nextValue) {
+      return response.status(422).json({
+        message: `A última leitura corrigida do contador ${lastReading.id_contador} não pode ser maior que a próxima leitura registrada (${formatNumber(nextValue)} em ${formatDate(nextReading.data_leitura)}).`,
+      });
+    }
+
+    if (nextReading) {
+      nextReadingUpdates.push({
+        id: Number(nextReading.id_leitura),
+        meterId: Number(nextReading.id_contador),
+        branch: nextReading.idfilial_usr,
+        date: dateKey(nextReading.data_leitura),
+        previousValue,
+      });
+      addAffectedDate(affectedDates, nextReading.idfilial_usr, nextReading.data_leitura);
+    }
   }
 
-  const queries = [
-    sql`
-      UPDATE leitura_contador
-         SET leitura = ${value},
-             leitura_anterior = ${previousValue}
-       WHERE id_leitura = ${id}
-       RETURNING
-         id_leitura AS "ID_LEITURA",
-         idfilial_usr AS "IDFILIAL_USR",
-         id_contador AS "ID_CONTADOR",
-         data_leitura AS "DATA_LEITURA",
-         leitura AS "LEITURA",
-         leitura_anterior AS "LEITURA_ANTERIOR",
-         data_registro AS "DATA_REGISTRO"
-    `,
-  ];
+  const queries = updates.map((reading) => sql`
+    UPDATE leitura_contador
+       SET leitura = ${reading.value},
+           leitura_anterior = ${reading.previousValue}
+     WHERE id_leitura = ${reading.id}
+     RETURNING
+       id_leitura AS "ID_LEITURA",
+       idfilial_usr AS "IDFILIAL_USR",
+       id_contador AS "ID_CONTADOR",
+       data_leitura AS "DATA_LEITURA",
+       leitura AS "LEITURA",
+       leitura_anterior AS "LEITURA_ANTERIOR",
+       data_registro AS "DATA_REGISTRO"
+  `);
 
-  if (current.id_proxima_leitura) {
+  for (const reading of nextReadingUpdates) {
     queries.push(sql`
       UPDATE leitura_contador
-         SET leitura_anterior = ${value}
-       WHERE id_leitura = ${current.id_proxima_leitura}
-         AND id_contador = ${current.id_contador}
-       RETURNING
-         id_leitura AS "ID_LEITURA",
-         idfilial_usr AS "IDFILIAL_USR",
-         id_contador AS "ID_CONTADOR",
-         data_leitura AS "DATA_LEITURA",
-         leitura AS "LEITURA",
-         leitura_anterior AS "LEITURA_ANTERIOR"
+         SET leitura_anterior = ${reading.previousValue}
+       WHERE id_leitura = ${reading.id}
+         AND id_contador = ${reading.meterId}
     `);
   }
 
@@ -177,11 +224,7 @@ async function updateReading(request, response, sql) {
   `;
 
   if (syncTable?.existe) {
-    const affectedDates = [current.data_leitura, current.data_proxima_leitura]
-      .filter(Boolean)
-      .map((date) => String(date).slice(0, 10));
-
-    for (const date of [...new Set(affectedDates)]) {
+    for (const [key, item] of affectedDates) {
       queries.push(sql`
         INSERT INTO sincronizacao_firebird (
           idfilial_usr,
@@ -193,8 +236,8 @@ async function updateReading(request, response, sql) {
           mensagem_erro
         )
         VALUES (
-          ${current.idfilial_usr},
-          ${date},
+          ${item.branch},
+          ${item.date},
           'PENDENTE',
           0,
           NULL,
@@ -212,20 +255,45 @@ async function updateReading(request, response, sql) {
     }
   }
 
-  const result = await sql.transaction(queries);
-  const updatedNextReading = current.id_proxima_leitura ? result[1]?.[0] ?? null : null;
+  const results = await sql.transaction(queries);
+  const correctedReadings = results.slice(0, updates.length).flat();
 
   return response.status(200).json({
-    message: updatedNextReading
-      ? "Leitura corrigida com sucesso. A leitura anterior do próximo registro também foi atualizada."
-      : "Leitura corrigida com sucesso. Não havia leitura posterior para atualizar.",
-    leitura: result[0][0],
-    proximaLeituraAtualizada: updatedNextReading,
+    message: `${correctedReadings.length} leitura(s) corrigida(s) com sucesso. ${
+      nextReadingUpdates.length
+        ? `${nextReadingUpdates.length} próxima(s) leitura(s) tiveram a leitura anterior atualizada.`
+        : "Não havia leitura posterior para atualizar."
+    }`,
+    leituras: correctedReadings,
+    proximasLeiturasAtualizadas: nextReadingUpdates.length,
   });
+}
+
+function groupByMeter(readings) {
+  const groups = new Map();
+  for (const reading of readings) {
+    const key = Number(reading.id_contador);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(reading);
+  }
+  return groups;
+}
+
+function addAffectedDate(map, branch, date) {
+  const item = { branch, date: dateKey(date) };
+  map.set(`${item.branch}|${item.date}`, item);
+}
+
+function dateKey(value) {
+  return String(value).slice(0, 10);
 }
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function formatDate(value) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value));
 }
 
 function formatNumber(value) {

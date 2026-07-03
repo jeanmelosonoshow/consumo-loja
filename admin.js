@@ -13,6 +13,7 @@ const metersFilter = document.querySelector("#meters-filter");
 const readingsFilter = document.querySelector("#readings-filter");
 const metersTable = document.querySelector("#meters-table");
 const readingsTable = document.querySelector("#readings-table");
+const saveReadingsButton = document.querySelector("#save-readings-button");
 let session = getSession();
 
 initialize();
@@ -53,6 +54,7 @@ function initializeAdminPage() {
     event.preventDefault();
     loadReadings().catch((error) => showMessage(error.message, true));
   });
+  saveReadingsButton.addEventListener("click", saveListedReadings);
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => switchTab(button.dataset.tab));
   });
@@ -176,18 +178,19 @@ async function saveMeter(row, id) {
 }
 
 async function loadReadings() {
-  readingsTable.innerHTML = '<tr><td class="empty-row" colspan="8">Carregando leituras...</td></tr>';
+  readingsTable.innerHTML = '<tr><td class="empty-row" colspan="7">Carregando leituras...</td></tr>';
   const query = new URLSearchParams(new FormData(readingsFilter));
   const data = await apiFetch(`/api/admin-leituras?${query}`);
 
   if (!data.leituras.length) {
-    readingsTable.innerHTML = '<tr><td class="empty-row" colspan="8">Nenhuma leitura encontrada.</td></tr>';
+    readingsTable.innerHTML = '<tr><td class="empty-row" colspan="7">Nenhuma leitura encontrada.</td></tr>';
     return;
   }
 
   readingsTable.replaceChildren(
     ...data.leituras.map((reading) => {
       const row = document.createElement("tr");
+      row.dataset.readingId = reading.ID_LEITURA;
       row.innerHTML = `
         <td>${escapeHtml(reading.ID_LEITURA)}</td>
         <td>${escapeHtml(reading.IDFILIAL_USR)}</td>
@@ -196,34 +199,49 @@ async function loadReadings() {
         <td>${formatDate(reading.DATA_LEITURA)}</td>
         <td><input data-field="LEITURA" type="number" min="0" step="1" value="${escapeAttribute(formatRawNumber(reading.LEITURA))}"></td>
         <td>${reading.LEITURA_ANTERIOR == null ? "-" : formatNumber(reading.LEITURA_ANTERIOR)}</td>
-        <td><button class="button button--primary" type="button">Corrigir</button></td>
       `;
-      row.querySelector("button").addEventListener("click", () => saveReading(row, reading.ID_LEITURA));
       return row;
     }),
   );
 }
 
-async function saveReading(row, id) {
-  const button = row.querySelector("button");
-  const value = row.querySelector('[data-field="LEITURA"]').value;
+async function saveListedReadings() {
+  const rows = [...readingsTable.querySelectorAll("tr[data-reading-id]")];
+  if (!rows.length) {
+    showMessage("Pesquise as leituras antes de corrigir.", true);
+    return;
+  }
 
-  if (!confirm("Confirma a correção desta leitura? A data será marcada para nova sincronização.")) {
+  const readings = rows.map((row) => ({
+    ID_LEITURA: Number(row.dataset.readingId),
+    LEITURA: Number(row.querySelector('[data-field="LEITURA"]').value),
+  }));
+
+  const invalidReading = readings.find(
+    (reading) => !Number.isInteger(reading.ID_LEITURA) || !Number.isInteger(reading.LEITURA) || reading.LEITURA < 0,
+  );
+
+  if (invalidReading) {
+    showMessage("Todas as leituras listadas devem ter valor inteiro maior ou igual a zero.", true);
+    return;
+  }
+
+  if (!confirm(`Confirma a correção das ${readings.length} leitura(s) listadas?`)) {
     return;
   }
 
   try {
-    setLoading(button, true);
-    await apiFetch("/api/admin-leituras", {
+    setLoading(saveReadingsButton, true);
+    const data = await apiFetch("/api/admin-leituras", {
       method: "PATCH",
-      body: JSON.stringify({ ID_LEITURA: id, LEITURA: Number(value) }),
+      body: JSON.stringify({ LEITURAS: readings }),
     });
-    showMessage("Leitura corrigida com sucesso.");
+    showMessage(data.message || "Leituras corrigidas com sucesso.");
     await loadReadings();
   } catch (error) {
     showMessage(error.message, true);
   } finally {
-    setLoading(button, false);
+    setLoading(saveReadingsButton, false);
   }
 }
 
