@@ -161,6 +161,14 @@ async function updateReading(request, response, sql) {
       UPDATE leitura_contador
          SET leitura_anterior = ${value}
        WHERE id_leitura = ${current.id_proxima_leitura}
+         AND id_contador = ${current.id_contador}
+       RETURNING
+         id_leitura AS "ID_LEITURA",
+         idfilial_usr AS "IDFILIAL_USR",
+         id_contador AS "ID_CONTADOR",
+         data_leitura AS "DATA_LEITURA",
+         leitura AS "LEITURA",
+         leitura_anterior AS "LEITURA_ANTERIOR"
     `);
   }
 
@@ -205,9 +213,14 @@ async function updateReading(request, response, sql) {
   }
 
   const result = await sql.transaction(queries);
+  const updatedNextReading = current.id_proxima_leitura ? result[1]?.[0] ?? null : null;
+
   return response.status(200).json({
-    message: "Leitura corrigida com sucesso.",
+    message: updatedNextReading
+      ? "Leitura corrigida com sucesso. A leitura anterior do próximo registro também foi atualizada."
+      : "Leitura corrigida com sucesso. Não havia leitura posterior para atualizar.",
     leitura: result[0][0],
+    proximaLeituraAtualizada: updatedNextReading,
   });
 }
 
