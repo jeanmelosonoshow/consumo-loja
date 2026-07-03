@@ -4,6 +4,7 @@ import { createAdminToken, handleAdminError, isAdminEmployee } from "../lib/admi
 
 const require = createRequire(import.meta.url);
 const Firebird = require("node-firebird");
+const FIREBIRD_LOGIN_TIMEOUT_MS = 12000;
 
 export default async function handler(request, response) {
   if (request.method !== "POST") {
@@ -33,7 +34,11 @@ export default async function handler(request, response) {
       });
     }
 
-    const user = await findFirebirdUser(usuario, senha);
+    const user = await withTimeout(
+      findFirebirdUser(usuario, senha),
+      FIREBIRD_LOGIN_TIMEOUT_MS,
+      "O ERP demorou para responder à validação do login. Tente novamente em alguns instantes.",
+    );
 
     if (!user) {
       return response.status(401).json({ message: "Usuário ou senha inválidos." });
@@ -97,6 +102,19 @@ function findFirebirdUser(usuario, senha) {
       });
     });
   });
+}
+
+function withTimeout(promise, milliseconds, message) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const error = new Error(message);
+      error.statusCode = 503;
+      reject(error);
+    }, milliseconds);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
 function normalizeText(value) {
