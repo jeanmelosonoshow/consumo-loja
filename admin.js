@@ -1,4 +1,6 @@
 const ADMIN_STORAGE_KEY = "consumo-loja:admin";
+const ADMIN_LOGIN_URL = "/admin.html";
+const ADMIN_PANEL_URL = "/admin-painel.html";
 const REQUEST_TIMEOUT_MS = 25000;
 const loginScreen = document.querySelector("#login-screen");
 const adminApp = document.querySelector("#admin-app");
@@ -16,7 +18,32 @@ let session = getSession();
 initialize();
 
 function initialize() {
+  if (loginForm) {
+    initializeLoginPage();
+    return;
+  }
+
+  if (adminApp) {
+    initializeAdminPage();
+  }
+}
+
+function initializeLoginPage() {
+  if (session?.token) {
+    window.location.replace(ADMIN_PANEL_URL);
+    return;
+  }
+
   loginForm.addEventListener("submit", login);
+  loginScreen.hidden = false;
+}
+
+function initializeAdminPage() {
+  if (!session?.token) {
+    window.location.replace(ADMIN_LOGIN_URL);
+    return;
+  }
+
   logoutButton.addEventListener("click", logout);
   metersFilter.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -30,12 +57,8 @@ function initialize() {
     button.addEventListener("click", () => switchTab(button.dataset.tab));
   });
 
-  if (session?.token) {
-    showAdmin();
-    loadMeters().catch((error) => showMessage(error.message, true));
-  } else {
-    showLogin();
-  }
+  adminUser.textContent = `${session.nomefuncionario || "Funcionário"} · ${session.idfuncionario}`;
+  loadMeters().catch((error) => showMessage(error.message, true));
 }
 
 async function login(event) {
@@ -66,13 +89,7 @@ async function login(event) {
       nomefuncionario: result.nomefuncionario,
     };
     sessionStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session));
-    loginForm.reset();
-    showAdmin();
-    try {
-      await loadMeters();
-    } catch (error) {
-      showMessage(error.message, true);
-    }
+    window.location.href = ADMIN_PANEL_URL;
   } catch (error) {
     loginError.textContent = error.message || "Não foi possível entrar no admin.";
     loginError.classList.add("message--error");
@@ -85,20 +102,7 @@ async function login(event) {
 function logout() {
   sessionStorage.removeItem(ADMIN_STORAGE_KEY);
   session = null;
-  showLogin();
-}
-
-function showLogin() {
-  loginScreen.hidden = false;
-  adminApp.hidden = true;
-}
-
-function showAdmin() {
-  loginScreen.hidden = true;
-  adminApp.hidden = false;
-  loginError.hidden = true;
-  loginError.classList.add("message--error");
-  adminUser.textContent = `${session.nomefuncionario || "Funcionário"} · ${session.idfuncionario}`;
+  window.location.href = ADMIN_LOGIN_URL;
 }
 
 function switchTab(tab) {
