@@ -98,7 +98,7 @@ export default async function handler(request, response) {
           ELSE ROUND(((consumo - consumo_anterior) / consumo_anterior) * 100, 2)
         END AS "VARIACAO_PERCENTUAL"
       FROM consumos
-      ORDER BY data_leitura, tipo_contador, apelido_contador
+      ORDER BY data_leitura, idfilial_usr, tipo_contador
     `;
     const missingReadings = await sql`
       WITH filiais_selecionadas AS (
