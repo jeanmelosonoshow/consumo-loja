@@ -155,11 +155,21 @@ KV_REST_API_TOKEN
 ```
 
 As consultas Firebird usadas pelo dashboard são cacheadas no Redis por 10
-minutos. O tempo pode ser ajustado pela variável:
+minutos. O tempo e os limites operacionais podem ser ajustados por:
 
 ```text
 FIREBIRD_CACHE_TTL_SECONDS=600
+FIREBIRD_STALE_CACHE_TTL_SECONDS=3600
+REDIS_CACHE_TIMEOUT_MS=1500
 ```
+
+`FIREBIRD_STALE_CACHE_TTL_SECONDS` mantém uma cópia expirada por mais tempo
+para ser usada se o Firebird ficar temporariamente indisponível. O Redis tem
+timeout curto para não bloquear o dashboard caso o cache esteja lento.
+
+Quando muitos usuários solicitam a mesma consulta ao mesmo tempo após o cache
+vencer, o backend usa uma trava curta no Redis para reduzir consultas
+duplicadas ao Firebird.
 
 Não é necessário criar tabelas, índices ou chaves manualmente no Redis. As
 chaves são criadas automaticamente com o prefixo `consumo-loja` conforme as
