@@ -147,6 +147,24 @@ POSTGRES_URL
 POSTGRES_URL_NON_POOLING
 ```
 
+A integração Upstash Redis da Vercel deve disponibilizar:
+
+```text
+KV_REST_API_URL
+KV_REST_API_TOKEN
+```
+
+As consultas Firebird usadas pelo dashboard são cacheadas no Redis por 10
+minutos. O tempo pode ser ajustado pela variável:
+
+```text
+FIREBIRD_CACHE_TTL_SECONDS=600
+```
+
+Não é necessário criar tabelas, índices ou chaves manualmente no Redis. As
+chaves são criadas automaticamente com o prefixo `consumo-loja` conforme as
+consultas forem executadas.
+
 ## API
 
 A aplicação expõe:
