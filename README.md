@@ -198,7 +198,7 @@ scripts/windows/sync-firebird-cache.local.example
 para um arquivo local com este nome:
 
 ```text
-scripts/windows/sync-firebird-cache.local
+C:\Users\Jean\consumo\sync-firebird-cache.local
 ```
 
 Preencha no `.local` `DATABASE_URL`, `DB_*_FB`, `KV_REST_API_URL` e

@@ -3,10 +3,15 @@ setlocal
 
 cd /d "%~dp0..\.."
 
-set "CONFIG_FILE=%~dp0sync-firebird-cache.local"
+set "CONFIG_FILE=C:\Users\Jean\consumo\sync-firebird-cache.local"
+
+if not exist "%CONFIG_FILE%" (
+  set "CONFIG_FILE=%~dp0sync-firebird-cache.local"
+)
 
 if not exist "%CONFIG_FILE%" (
   echo Arquivo de configuracao nao encontrado: "%CONFIG_FILE%"
+  echo Local recomendado: C:\Users\Jean\consumo\sync-firebird-cache.local
   echo Crie esse arquivo a partir de scripts\windows\sync-firebird-cache.local.example
   exit /b 1
 )
