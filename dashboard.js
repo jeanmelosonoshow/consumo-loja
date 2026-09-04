@@ -1,20 +1,32 @@
 const LOGIN_STORAGE_KEY = "consumo-loja:usuario";
 const params = new URLSearchParams(window.location.search);
 const savedLogin = getSavedLogin();
+const branchParamNames = [
+  "a_system_user_unit_code",
+  "$a_system_user_unit_code",
+  "IDFILIAL_USR",
+  "idfilial_usr",
+  "filial",
+];
+const employeeParamNames = [
+  "a_system_user_custom_code",
+  "$a_system_user_custom_code",
+  "IDFUNCIONARIO",
+  "idfuncionario",
+  "funcionario",
+];
+const queryBranch = getQueryValue(branchParamNames);
+const queryEmployee = getQueryValue(employeeParamNames);
+const adiantiSentEmptyBranch = hasQueryParam(branchParamNames) && !queryBranch;
+const adiantiSentEmptyEmployee = hasQueryParam(employeeParamNames) && !queryEmployee;
+const showAllBranches = adiantiSentEmptyBranch || adiantiSentEmptyEmployee;
 const branchId = String(
-  params.get("a_system_user_unit_code") ??
-    params.get("$a_system_user_unit_code") ??
-    params.get("IDFILIAL_USR") ??
-    savedLogin?.idfilial ??
-    "",
+  showAllBranches ? "" : queryBranch ?? savedLogin?.idfilial ?? "",
 )
   .trim()
   .toUpperCase();
 const employeeCode = String(
-  params.get("a_system_user_custom_code") ??
-    params.get("$a_system_user_custom_code") ??
-    savedLogin?.idfuncionario ??
-    "",
+  showAllBranches ? "" : queryEmployee ?? savedLogin?.idfuncionario ?? "",
 )
   .trim()
   .toUpperCase();
@@ -50,7 +62,7 @@ initializeDashboard();
 async function initializeDashboard() {
   document.querySelector("#branch-code").textContent = branchId || "--";
 
-  if (!/^[A-Z0-9]{2}$/.test(branchId)) {
+  if (!showAllBranches && !/^[A-Z0-9]{2}$/.test(branchId)) {
     showError(
       "A filial não foi identificada. Abra pelo Adianti ou faça login no formulário antes de acessar o dashboard.",
     );
@@ -66,11 +78,12 @@ async function initializeDashboard() {
     dashboardAccess = await response.json();
     if (!response.ok) throw new Error(dashboardAccess.message);
 
-    selectedBranches = dashboardAccess.filiais.some(
-      (branch) => branch.codigo === branchId,
-    )
-      ? [branchId]
-      : [dashboardAccess.filiais[0].codigo];
+    selectedBranches =
+      showAllBranches || !branchId
+        ? dashboardAccess.filiais.map((branch) => branch.codigo)
+        : dashboardAccess.filiais.some((branch) => branch.codigo === branchId)
+          ? [branchId]
+          : [dashboardAccess.filiais[0].codigo];
     renderBranchFilter();
     await loadDashboard();
   } catch (error) {
@@ -1218,4 +1231,22 @@ function getSavedLogin() {
   } catch {
     return null;
   }
+}
+
+function getQueryValue(names) {
+  for (const name of names) {
+    const value = params.get(name);
+    if (isFilledQueryValue(value)) return value;
+  }
+
+  return null;
+}
+
+function hasQueryParam(names) {
+  return names.some((name) => params.has(name));
+}
+
+function isFilledQueryValue(value) {
+  const text = String(value ?? "").trim();
+  return text && !text.includes("{$") && !text.includes("}");
 }

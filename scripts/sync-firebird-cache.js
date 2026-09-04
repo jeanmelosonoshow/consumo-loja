@@ -26,6 +26,10 @@ async function main() {
     throw new Error("Nenhuma filial valida encontrada para aquecer acessos.");
   }
 
+  await getDashboardAccess("", "", {
+    forceRefresh: true,
+  });
+
   let accessCount = 0;
   for (const employee of employees) {
     await getDashboardAccess(baseBranch, employee.idfuncionario, {
@@ -64,13 +68,13 @@ async function loadDashboardEmployees() {
     SELECT IDFUNCIONARIO, CATEGORIA
     FROM FUNCIONARIO
     WHERE STATUS = 'A'
-      AND CATEGORIA IN ('DI', 'SU')
+      AND CATEGORIA IN ('DI', 'SU', 'GR')
     ORDER BY IDFUNCIONARIO
   `, [], { forceRefresh: true });
 
   return rows
     .map((row) => ({
-      idfuncionario: normalizeValue(row.IDFUNCIONARIO),
+      idfuncionario: normalizeValue(row.IDFUNCIONARIO).toUpperCase(),
       categoria: normalizeValue(row.CATEGORIA).toUpperCase(),
     }))
     .filter((employee) => /^[A-Z0-9._-]{1,30}$/.test(employee.idfuncionario));

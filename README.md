@@ -345,11 +345,12 @@ Não utilize o listener antigo de `consumo-loja:dashboard-height`, pois ele
 expande o iframe e remove a necessidade da rolagem interna.
 
 O código do funcionário recebido em `a_system_user_custom_code` é consultado no
-Firebird. Funcionários ativos da categoria `DI` podem selecionar todas as
-filiais com supervisor. Funcionários `SU` podem selecionar as filiais em que
-são o supervisor. As demais categorias, códigos ausentes ou inválidos
-permanecem limitados à filial recebida do Adianti. Pagamentos e leituras
-validam novamente essa autorização na API antes de retornar múltiplas filiais.
+Redis sincronizado. Funcionários ativos da categoria `DI` podem selecionar todas
+as filiais com supervisor. Funcionários `SU` podem selecionar as filiais em que
+são o supervisor. Funcionários `GR` permanecem limitados à filial do próprio
+funcionário. Códigos ausentes ou inválidos permanecem limitados à filial
+recebida do Adianti. Pagamentos e leituras validam novamente essa autorização na
+API antes de retornar múltiplas filiais.
 
 Para reduzir falhas transitórias do Firebird, o backend reaproveita as
 permissões consultadas por alguns minutos e realiza novas tentativas de conexão
@@ -361,8 +362,9 @@ Quando não existe código de funcionário, a identificação de acesso usa
 diretamente a filial do Adianti e não abre uma conexão adicional com o ERP.
 
 Quando `a_system_user_custom_code` estiver vazio ou não for substituído pelo
-Adianti, nenhuma consulta multifilial será liberada. Nesse caso, o dashboard
-utiliza exclusivamente `a_system_user_unit_code`.
+Adianti, o dashboard tenta usar o funcionário salvo pelo login do formulário.
+Se também não houver login salvo, nenhuma consulta multifilial será liberada e
+o dashboard utiliza exclusivamente `a_system_user_unit_code`.
 
 A projeção financeira é comparada com o último mês pago de cada recurso,
 mostrando diferença em reais, percentual e se ficará acima ou abaixo. A tabela
