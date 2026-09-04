@@ -1,8 +1,11 @@
+const LOGIN_STORAGE_KEY = "consumo-loja:usuario";
 const params = new URLSearchParams(window.location.search);
+const savedLogin = getSavedLogin();
 const branchId = String(
   params.get("a_system_user_unit_code") ??
     params.get("$a_system_user_unit_code") ??
     params.get("IDFILIAL_USR") ??
+    savedLogin?.idfilial ??
     "",
 )
   .trim()
@@ -10,6 +13,7 @@ const branchId = String(
 const employeeCode = String(
   params.get("a_system_user_custom_code") ??
     params.get("$a_system_user_custom_code") ??
+    savedLogin?.idfuncionario ??
     "",
 )
   .trim()
@@ -1201,4 +1205,12 @@ function escapeHtml(value) {
   const element = document.createElement("span");
   element.textContent = String(value ?? "");
   return element.innerHTML;
+}
+
+function getSavedLogin() {
+  try {
+    return JSON.parse(sessionStorage.getItem(LOGIN_STORAGE_KEY));
+  } catch {
+    return null;
+  }
 }
