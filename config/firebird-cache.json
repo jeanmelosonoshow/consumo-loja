@@ -1,0 +1,7 @@
+{
+  "connectionMode": "redis-only",
+  "cacheTtlSeconds": 3600,
+  "staleCacheTtlSeconds": 86400,
+  "redisTimeoutMs": 1500,
+  "cachePrefix": "consumo-loja"
+}

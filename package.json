@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check dashboard.js && node --check admin.js && node --check api/contadores.js && node --check api/leituras.js && node --check api/login.js && node --check lib/admin-auth.js && node --check api/admin-login.js && node --check api/admin-contadores.js && node --check api/admin-leituras.js && node --check lib/dashboard-access.js && node --check api/dashboard-acessos.js && node --check api/dashboard-pagamentos.js && node --check api/dashboard-leituras.js && node --check api/dashboard-tarifas.js"
+    "check": "node --check app.js && node --check dashboard.js && node --check admin.js && node --check api/contadores.js && node --check api/leituras.js && node --check api/login.js && node --check lib/admin-auth.js && node --check api/admin-login.js && node --check api/admin-contadores.js && node --check api/admin-leituras.js && node --check lib/firebird-cache-config.js && node --check lib/redis-cache.js && node --check lib/dashboard-access.js && node --check lib/dashboard-payments.js && node --check api/dashboard-acessos.js && node --check api/dashboard-pagamentos.js && node --check api/dashboard-leituras.js && node --check api/dashboard-tarifas.js && node --check scripts/sync-firebird-cache.js",
+    "sync:firebird-cache": "node scripts/sync-firebird-cache.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",

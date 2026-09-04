@@ -154,14 +154,27 @@ KV_REST_API_URL
 KV_REST_API_TOKEN
 ```
 
-As consultas Firebird usadas pelo dashboard são cacheadas no Redis por 10
-minutos. O tempo e os limites operacionais podem ser ajustados por:
+As consultas Firebird usadas pelo dashboard são cacheadas no Redis por 1 hora.
+O tempo e os limites operacionais podem ser ajustados por:
 
 ```text
-FIREBIRD_CACHE_TTL_SECONDS=600
-FIREBIRD_STALE_CACHE_TTL_SECONDS=3600
+FIREBIRD_CONNECTION_MODE=redis-only
+FIREBIRD_CACHE_TTL_SECONDS=3600
+FIREBIRD_STALE_CACHE_TTL_SECONDS=86400
 REDIS_CACHE_TIMEOUT_MS=1500
 ```
+
+O modo também pode ser definido no arquivo:
+
+```text
+config/firebird-cache.json
+```
+
+Use `redis-only` enquanto a Vercel não tiver acesso direto ao Firebird. Nesse
+modo, o dashboard lê os dados que foram sincronizados previamente no Redis e
+não tenta abrir conexão com o ERP pela Vercel. Quando a liberação no servidor
+Firebird estiver pronta, altere para `direct` no JSON ou configure
+`FIREBIRD_CONNECTION_MODE=direct` na Vercel.
 
 `FIREBIRD_STALE_CACHE_TTL_SECONDS` mantém uma cópia expirada por mais tempo
 para ser usada se o Firebird ficar temporariamente indisponível. O Redis tem
@@ -174,6 +187,18 @@ duplicadas ao Firebird.
 Não é necessário criar tabelas, índices ou chaves manualmente no Redis. As
 chaves são criadas automaticamente com o prefixo `consumo-loja` conforme as
 consultas forem executadas.
+
+Para sincronizar Firebird -> Redis em uma máquina Windows que tenha acesso ao
+ERP, configure as variáveis `DB_*_FB`, `KV_REST_API_URL` e
+`KV_REST_API_TOKEN` nessa máquina e execute:
+
+```text
+npm run sync:firebird-cache
+```
+
+No Agendador de Tarefas do Windows, execute esse comando de 1 em 1 hora. O
+sincronizador aquece o cache de pagamentos do dashboard e as permissões
+multifiliais dos funcionários ativos das categorias `DI` e `SU`.
 
 ## API
 
