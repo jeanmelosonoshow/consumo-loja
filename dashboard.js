@@ -51,7 +51,9 @@ async function initializeDashboard() {
   document.querySelector("#branch-code").textContent = branchId || "--";
 
   if (!/^[A-Z0-9]{2}$/.test(branchId)) {
-    showError("A filial não foi identificada. Abra o dashboard pelo Adianti.");
+    showError(
+      "A filial não foi identificada. Abra pelo Adianti ou faça login no formulário antes de acessar o dashboard.",
+    );
     return;
   }
 
@@ -1209,7 +1211,10 @@ function escapeHtml(value) {
 
 function getSavedLogin() {
   try {
-    return JSON.parse(sessionStorage.getItem(LOGIN_STORAGE_KEY));
+    return JSON.parse(
+      sessionStorage.getItem(LOGIN_STORAGE_KEY) ??
+        localStorage.getItem(LOGIN_STORAGE_KEY),
+    );
   } catch {
     return null;
   }

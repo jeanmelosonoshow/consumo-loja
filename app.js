@@ -144,7 +144,7 @@ async function authenticateUser(event) {
       throw new Error(result.message || "Usuário ou senha inválidos.");
     }
 
-    sessionStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(result));
+    saveUser(result);
     branchId = normalizeBranchCode(result.idfilial);
     branchLabel = branchId;
     loginForm.reset();
@@ -159,15 +159,26 @@ async function authenticateUser(event) {
 
 function getSavedUser() {
   try {
-    return JSON.parse(sessionStorage.getItem(LOGIN_STORAGE_KEY));
+    return JSON.parse(
+      sessionStorage.getItem(LOGIN_STORAGE_KEY) ??
+        localStorage.getItem(LOGIN_STORAGE_KEY),
+    );
   } catch {
     sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+    localStorage.removeItem(LOGIN_STORAGE_KEY);
     return null;
   }
 }
 
+function saveUser(user) {
+  const serialized = JSON.stringify(user);
+  sessionStorage.setItem(LOGIN_STORAGE_KEY, serialized);
+  localStorage.setItem(LOGIN_STORAGE_KEY, serialized);
+}
+
 function logout() {
   sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+  localStorage.removeItem(LOGIN_STORAGE_KEY);
   branchId = "";
   branchLabel = "";
   meters = [];
