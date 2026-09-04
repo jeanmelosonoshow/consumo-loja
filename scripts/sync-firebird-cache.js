@@ -1,19 +1,24 @@
 process.env.FIREBIRD_CONNECTION_MODE = "direct";
 
-const [{ getDashboardAccess, queryFirebird }, { syncAllDashboardPayments }] =
-  await Promise.all([
-    import("../lib/dashboard-access.js"),
-    import("../lib/dashboard-payments.js"),
-  ]);
+const [
+  { getDashboardAccess, queryFirebird },
+  { syncAllDashboardPayments },
+  { syncFirebirdUsers },
+] = await Promise.all([
+  import("../lib/dashboard-access.js"),
+  import("../lib/dashboard-payments.js"),
+  import("../lib/firebird-users.js"),
+]);
 
 async function main() {
   const startedAt = new Date();
   console.log(`[sync] Iniciando sincronizacao Firebird -> Redis em ${startedAt.toISOString()}`);
 
-  const [branches, employees, paymentsCount] = await Promise.all([
+  const [branches, employees, paymentsCount, usersCount] = await Promise.all([
     loadBranches(),
     loadDashboardEmployees(),
     syncAllDashboardPayments(),
+    syncFirebirdUsers(),
   ]);
 
   const baseBranch = process.env.SYNC_BASE_BRANCH || branches[0]?.codigo;
@@ -30,6 +35,7 @@ async function main() {
   }
 
   console.log(`[sync] Filiais lidas: ${branches.length}`);
+  console.log(`[sync] Usuarios de login sincronizados: ${usersCount}`);
   console.log(`[sync] Acessos multifiliais sincronizados: ${accessCount}`);
   console.log(`[sync] Pagamentos sincronizados: ${paymentsCount}`);
   console.log(`[sync] Finalizado em ${new Date().toISOString()}`);

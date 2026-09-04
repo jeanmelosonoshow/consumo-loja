@@ -189,16 +189,30 @@ chaves são criadas automaticamente com o prefixo `consumo-loja` conforme as
 consultas forem executadas.
 
 Para sincronizar Firebird -> Redis em uma máquina Windows que tenha acesso ao
-ERP, configure as variáveis `DB_*_FB`, `KV_REST_API_URL` e
-`KV_REST_API_TOKEN` nessa máquina e execute:
+ERP, copie o modelo:
 
 ```text
-npm run sync:firebird-cache
+scripts/windows/sync-firebird-cache.local.example
 ```
 
-No Agendador de Tarefas do Windows, execute esse comando de 1 em 1 hora. O
-sincronizador aquece o cache de pagamentos do dashboard e as permissões
-multifiliais dos funcionários ativos das categorias `DI` e `SU`.
+para um arquivo local com este nome:
+
+```text
+scripts/windows/sync-firebird-cache.local
+```
+
+Preencha no `.local` `DATABASE_URL`, `DB_*_FB`, `KV_REST_API_URL` e
+`KV_REST_API_TOKEN`. O arquivo `sync-firebird-cache.local` fica fora do Git e é
+lido pelo `.cmd` no momento da execução. Depois execute:
+
+```text
+scripts\windows\sync-firebird-cache.cmd
+```
+
+No Agendador de Tarefas do Windows, execute esse arquivo de 1 em 1 hora. O
+sincronizador aquece o cache de pagamentos do dashboard, login de usuários
+ativos, login administrativo e permissões multifiliais dos funcionários ativos
+das categorias `DI` e `SU`.
 
 ## API
 
@@ -229,8 +243,10 @@ Sem a_system_user_unit_code -> solicita login do ERP Firebird
 
 No login alternativo, a API valida `LOGIN`, `SENHAWEB` e `STATUS = 'A'` na
 tabela `FUNCIONARIO`. A filial retornada pelo ERP é usada para carregar o
-formulário. As variáveis `DB_*_FB` precisam ser configuradas também no projeto
-Vercel do consumo-loja.
+formulário. Em `FIREBIRD_CONNECTION_MODE=redis-only`, essa validação usa os
+usuários sincronizados no Redis pela máquina Windows. As variáveis `DB_*_FB`
+ficam nessa máquina sincronizadora. Na Vercel, mantenha apenas as variáveis da
+Upstash e `FIREBIRD_CONNECTION_MODE=redis-only`.
 
 O `IDFILIAL` é tratado como texto de exatamente dois caracteres e preserva
 códigos numéricos ou alfanuméricos, por exemplo:
